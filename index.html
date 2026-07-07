@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calendar Pyan Kya</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <h1>Calendar Pyan Kya</h1>
+
+        <!-- Fix Table Section -->
+        <div class="section">
+            <div class="section-header">
+                <h2>Fix Table</h2>
+                <button onclick="addColumn()" class="btn btn-add">+ Add Column</button>
+            </div>
+            <div class="table-controls">
+                <button onclick="zoomIn('fixTable')">+</button>
+                <button onclick="zoomOut('fixTable')">−</button>
+                <button onclick="zoomReset('fixTable')">Reset</button>
+            </div>
+            <div class="table-wrapper" id="fixTableWrapper">
+                <div class="table-inner" id="fixTableInner"></div>
+            </div>
+        </div>
+
+        <!-- Calculate Button -->
+        <div class="section">
+            <button onclick="calculate()" class="btn btn-calc">Calculate Compare</button>
+        </div>
+
+        <!-- Table 1 (Result with colors and arrows) -->
+        <div class="section" id="table1Section" style="display:none;">
+            <div class="section-header">
+                <h2>Table 1 - Compare Results</h2>
+            </div>
+            <div class="table-controls">
+                <button onclick="zoomIn('table1')">+</button>
+                <button onclick="zoomOut('table1')">−</button>
+                <button onclick="zoomReset('table1')">Reset</button>
+            </div>
+            <div class="table-wrapper" id="table1Wrapper">
+                <div class="table-inner" id="table1Inner"></div>
+            </div>
+            <!-- Note section below table 1 -->
+            <div id="noteSection" class="note-section"></div>
+        </div>
+    </div>
+
+    <script src="data.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,204 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    background: #1a1a2e;
+    color: #eee;
+    font-family: 'Segoe UI', Tahoma, sans-serif;
+    padding: 10px;
+}
+
+.container {
+    max-width: 100%;
+    margin: 0 auto;
+}
+
+h1 {
+    text-align: center;
+    color: #fbbf24;
+    margin-bottom: 15px;
+    font-size: 1.5em;
+}
+
+h2 {
+    color: #00d4ff;
+    font-size: 1.1em;
+}
+
+.section {
+    margin-bottom: 20px;
+}
+
+.section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
+.btn {
+    padding: 8px 16px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-weight: bold;
+    font-size: 0.9em;
+}
+
+.btn-add {
+    background: #22c55e;
+    color: #000;
+}
+
+.btn-calc {
+    background: #3b82f6;
+    color: #fff;
+    width: 100%;
+    padding: 12px;
+    font-size: 1.1em;
+}
+
+.table-controls {
+    margin-bottom: 5px;
+}
+
+.table-controls button {
+    padding: 4px 12px;
+    margin-right: 5px;
+    background: #333;
+    color: #fff;
+    border: 1px solid #555;
+    border-radius: 3px;
+    cursor: pointer;
+}
+
+.table-wrapper {
+    overflow: auto;
+    max-height: 70vh;
+    border: 1px solid #333;
+    border-radius: 5px;
+    background: #0f0f23;
+}
+
+.table-inner {
+    transform-origin: top left;
+    transition: transform 0.2s;
+    position: relative;
+}
+
+table {
+    border-collapse: collapse;
+    font-size: 11px;
+    white-space: nowrap;
+}
+
+th, td {
+    border: 1px solid #444;
+    padding: 3px 5px;
+    text-align: center;
+    min-width: 35px;
+}
+
+th {
+    background: #cc0000;
+    color: #fff;
+    font-weight: bold;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+
+td {
+    background: #fff;
+    color: #000;
+}
+
+td.row-number {
+    background: #cc0000;
+    color: #fff;
+    font-weight: bold;
+    position: sticky;
+    left: 0;
+    z-index: 5;
+}
+
+th.row-number {
+    position: sticky;
+    left: 0;
+    z-index: 11;
+}
+
+td.editable:hover {
+    background: #e0e0ff;
+    cursor: pointer;
+}
+
+/* Highlight colors */
+td.highlight-yellow {
+    background: #fbbf24 !important;
+    color: #000 !important;
+    font-weight: bold;
+}
+
+td.highlight-green {
+    background: #22c55e !important;
+    color: #000 !important;
+    font-weight: bold;
+}
+
+td.highlight-red {
+    background: #ef4444 !important;
+    color: #fff !important;
+    font-weight: bold;
+}
+
+td.highlight-blue {
+    background: #3b82f6 !important;
+    color: #fff !important;
+    font-weight: bold;
+}
+
+/* Note section */
+.note-section {
+    margin-top: 10px;
+    padding: 10px;
+    background: #1e293b;
+    border: 1px solid #334155;
+    border-radius: 5px;
+    color: #e2e8f0;
+    font-size: 0.9em;
+}
+
+.note-section h3 {
+    color: #fbbf24;
+    margin-bottom: 8px;
+}
+
+.note-item {
+    margin-bottom: 6px;
+    padding: 4px 8px;
+    background: #0f172a;
+    border-radius: 3px;
+    border-left: 3px solid #fbbf24;
+}
+
+.note-item .label {
+    color: #94a3b8;
+    font-size: 0.85em;
+}
+
+.note-item .values {
+    color: #fbbf24;
+    font-weight: bold;
+}
+
+.svg-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    pointer-events: none;
+    z-index: 15;
+}
