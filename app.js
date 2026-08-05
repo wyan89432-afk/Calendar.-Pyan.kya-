@@ -1,7 +1,10 @@
-// Calendar Pyan Kya - Main Application Logic
+// Calendar Pyan Kya
 // Display columns start from index 31 (header "0") as display "00"
 
 const DISPLAY_START_INDEX = 31;
+const ROWS = 24;
+const GAP_ROWS = 131; // 5 col * 24 rows + 11 rows = 131
+
 let zoomLevel = 1;
 let tableData = [];
 let tableHeaders = [];
@@ -9,10 +12,7 @@ let addedColumns = [];
 
 document.addEventListener('DOMContentLoaded', () => {
     loadData();
-    renderFixTable();
-    renderGreenTable();
-    renderYellowTable();
-    
+    renderAll();
     document.getElementById('addColBtn').addEventListener('click', addColumn);
     document.getElementById('compareBtn').addEventListener('click', runCompare);
     document.getElementById('zoomIn').addEventListener('click', () => setZoom(zoomLevel + 0.1));
@@ -23,7 +23,6 @@ document.addEventListener('DOMContentLoaded', () => {
 function loadData() {
     tableHeaders = [...TABLE_HEADERS];
     tableData = TABLE_DATA.map(row => [...row]);
-    
     const saved = localStorage.getItem('calendarPyanKya_data');
     if (saved) {
         try {
@@ -32,14 +31,12 @@ function loadData() {
                 addedColumns = parsed.addedColumns;
                 for (const col of addedColumns) {
                     tableHeaders.push(col.name);
-                    for (let r = 0; r < 24; r++) {
+                    for (let r = 0; r < ROWS; r++) {
                         tableData[r].push(col.data[r] || '');
                     }
                 }
             }
-        } catch(e) {
-            console.error('Error loading saved data:', e);
-        }
+        } catch(e) {}
     }
 }
 
@@ -51,16 +48,15 @@ function addColumn() {
     const lastHeader = tableHeaders[tableHeaders.length - 1];
     const nextNum = parseInt(lastHeader) + 1;
     const newName = String(nextNum);
-    
     tableHeaders.push(newName);
-    const newColData = new Array(24).fill('');
-    for (let r = 0; r < 24; r++) {
-        tableData[r].push('');
-    }
-    
+    const newColData = new Array(ROWS).fill('');
+    for (let r = 0; r < ROWS; r++) tableData[r].push('');
     addedColumns.push({ name: newName, data: newColData });
     saveData();
-    
+    renderAll();
+}
+
+function renderAll() {
     renderFixTable();
     renderGreenTable();
     renderYellowTable();
@@ -70,33 +66,40 @@ function getDisplayColCount() {
     return tableHeaders.length - DISPLAY_START_INDEX;
 }
 
-function getDisplayColName(idx) {
+function colName(idx) {
     return String(idx).padStart(2, '0');
+}
+
+// Convert display col + row to linear position (0-based)
+function toLinear(col, row) {
+    return col * ROWS + row;
+}
+
+// Convert linear position back to col + row
+function fromLinear(pos) {
+    const totalCols = getDisplayColCount();
+    const totalCells = totalCols * ROWS;
+    if (pos < 0 || pos >= totalCells) return null;
+    return { col: Math.floor(pos / ROWS), row: pos % ROWS };
 }
 
 // ============ FIX TABLE ============
 function renderFixTable() {
     const table = document.getElementById('fixTable');
     const totalCols = getDisplayColCount();
-    
     let html = '<thead><tr><th>No</th>';
-    for (let c = 0; c < totalCols; c++) {
-        html += '<th>' + getDisplayColName(c) + '</th>';
-    }
+    for (let c = 0; c < totalCols; c++) html += '<th>' + colName(c) + '</th>';
     html += '</tr></thead><tbody>';
-    
-    for (let r = 0; r < 24; r++) {
+    for (let r = 0; r < ROWS; r++) {
         html += '<tr><td class="row-num">' + (r + 1) + '</td>';
         for (let c = 0; c < totalCols; c++) {
             const arrIdx = DISPLAY_START_INDEX + c;
             const val = tableData[r][arrIdx] || '';
             const isEmpty = val.trim() === '';
-            const cls = isEmpty ? 'empty-cell' : '';
-            html += '<td class="' + cls + '">';
+            html += '<td class="' + (isEmpty ? 'empty-cell' : '') + '">';
             html += '<input type="text" maxlength="3" value="' + (isEmpty ? '' : val) + '" ';
             html += 'data-row="' + r + '" data-col="' + arrIdx + '" ';
-            html += 'onchange="onCellEdit(this)" ';
-            html += 'placeholder="' + (isEmpty ? 'xxx' : '') + '">';
+            html += 'onchange="onCellEdit(this)" placeholder="' + (isEmpty ? 'xxx' : '') + '">';
             html += '</td>';
         }
         html += '</tr>';
@@ -109,47 +112,34 @@ function onCellEdit(input) {
     const row = parseInt(input.dataset.row);
     const col = parseInt(input.dataset.col);
     let val = input.value.trim();
-    
     if (val && /^\d+$/.test(val)) {
         val = val.padStart(3, '0');
         input.value = val;
     }
-    
     tableData[row][col] = val;
-    
     const origLen = TABLE_HEADERS.length;
     if (col >= origLen) {
         const addedIdx = col - origLen;
-        if (addedIdx < addedColumns.length) {
-            addedColumns[addedIdx].data[row] = val;
-        }
+        if (addedIdx < addedColumns.length) addedColumns[addedIdx].data[row] = val;
     }
-    
     saveData();
     renderGreenTable();
     renderYellowTable();
 }
 
-// ============ GREEN/RED TABLE (Column 00 to Last) ============
+// ============ GREEN/RED TABLE (Col 00 to Last) ============
 function renderGreenTable() {
     const table = document.getElementById('greenTable');
     const totalCols = getDisplayColCount();
-    
     let html = '<thead><tr><th>No</th>';
-    for (let c = 0; c < totalCols; c++) {
-        html += '<th>' + getDisplayColName(c) + '</th>';
-    }
+    for (let c = 0; c < totalCols; c++) html += '<th>' + colName(c) + '</th>';
     html += '</tr></thead><tbody>';
-    
-    for (let r = 0; r < 24; r++) {
+    for (let r = 0; r < ROWS; r++) {
         html += '<tr><td class="row-num">' + (r + 1) + '</td>';
         for (let c = 0; c < totalCols; c++) {
-            const arrIdx = DISPLAY_START_INDEX + c;
-            const val = tableData[r][arrIdx] || '';
+            const val = tableData[r][DISPLAY_START_INDEX + c] || '';
             const isEmpty = val.trim() === '';
-            const cellId = 'green-r' + r + '-c' + c;
-            const cls = isEmpty ? 'xxx-cell' : '';
-            html += '<td id="' + cellId + '" class="' + cls + '">' + (isEmpty ? 'xxx' : val) + '</td>';
+            html += '<td id="green-r' + r + '-c' + c + '" class="' + (isEmpty ? 'xxx-cell' : '') + '">' + (isEmpty ? 'xxx' : val) + '</td>';
         }
         html += '</tr>';
     }
@@ -157,27 +147,19 @@ function renderGreenTable() {
     table.innerHTML = html;
 }
 
-// ============ YELLOW TABLE (Column 05 to Last) ============
+// ============ YELLOW TABLE (Col 05 to Last) ============
 function renderYellowTable() {
     const table = document.getElementById('yellowTable');
     const totalCols = getDisplayColCount();
-    const startCol = 5;
-    
     let html = '<thead><tr><th>No</th>';
-    for (let c = startCol; c < totalCols; c++) {
-        html += '<th>' + getDisplayColName(c) + '</th>';
-    }
+    for (let c = 5; c < totalCols; c++) html += '<th>' + colName(c) + '</th>';
     html += '</tr></thead><tbody>';
-    
-    for (let r = 0; r < 24; r++) {
+    for (let r = 0; r < ROWS; r++) {
         html += '<tr><td class="row-num">' + (r + 1) + '</td>';
-        for (let c = startCol; c < totalCols; c++) {
-            const arrIdx = DISPLAY_START_INDEX + c;
-            const val = tableData[r][arrIdx] || '';
+        for (let c = 5; c < totalCols; c++) {
+            const val = tableData[r][DISPLAY_START_INDEX + c] || '';
             const isEmpty = val.trim() === '';
-            const cellId = 'yellow-r' + r + '-c' + c;
-            const cls = isEmpty ? 'xxx-cell' : '';
-            html += '<td id="' + cellId + '" class="' + cls + '">' + (isEmpty ? 'xxx' : val) + '</td>';
+            html += '<td id="yellow-r' + r + '-c' + c + '" class="' + (isEmpty ? 'xxx-cell' : '') + '">' + (isEmpty ? 'xxx' : val) + '</td>';
         }
         html += '</tr>';
     }
@@ -192,12 +174,11 @@ function runCompare() {
     
     const totalCols = getDisplayColCount();
     
-    // Find the last column (display col) that has ANY data
+    // Find last column with any data
     let lastFilledCol = -1;
     for (let c = totalCols - 1; c >= 0; c--) {
-        const arrIdx = DISPLAY_START_INDEX + c;
-        for (let r = 0; r < 24; r++) {
-            if (tableData[r][arrIdx] && tableData[r][arrIdx].trim() !== '') {
+        for (let r = 0; r < ROWS; r++) {
+            if (tableData[r][DISPLAY_START_INDEX + c] && tableData[r][DISPLAY_START_INDEX + c].trim() !== '') {
                 lastFilledCol = c;
                 break;
             }
@@ -205,36 +186,27 @@ function runCompare() {
         if (lastFilledCol >= 0) break;
     }
     
-    if (lastFilledCol < 5) {
-        document.getElementById('noteSection').innerHTML = '<div class="note-item">Compare လုပ်ရန် column 6 ခုအနည်းဆုံး လိုအပ်ပါသည်။</div>';
+    if (lastFilledCol < 0) {
+        document.getElementById('noteSection').innerHTML = '<div class="note-item">Data မရှိပါ။</div>';
         return;
     }
     
-    // Find the last filled row in lastFilledCol
-    const lastColArrIdx = DISPLAY_START_INDEX + lastFilledCol;
+    // Find last filled row in lastFilledCol
     let lastFilledRow = -1;
-    for (let r = 0; r < 24; r++) {
-        if (tableData[r][lastColArrIdx] && tableData[r][lastColArrIdx].trim() !== '') {
+    for (let r = 0; r < ROWS; r++) {
+        if (tableData[r][DISPLAY_START_INDEX + lastFilledCol] && tableData[r][DISPLAY_START_INDEX + lastFilledCol].trim() !== '') {
             lastFilledRow = r;
         }
     }
     
-    // Blank rows = rows after lastFilledRow
+    // Blank rows in lastFilledCol
     const blankRows = [];
-    for (let r = lastFilledRow + 1; r < 24; r++) {
+    for (let r = lastFilledRow + 1; r < ROWS; r++) {
         blankRows.push(r);
     }
     
     if (blankRows.length === 0) {
-        document.getElementById('noteSection').innerHTML = '<div class="note-item">နောက်ဆုံး column တွင် blank row မရှိပါ။ အားလုံးဖြည့်ပြီးပါပြီ။</div>';
-        return;
-    }
-    
-    // Compare source = 5 columns back from lastFilledCol, same row as blank
-    const COL_GAP = 5;
-    const sourceCol = lastFilledCol - COL_GAP;
-    if (sourceCol < 0) {
-        document.getElementById('noteSection').innerHTML = '<div class="note-item">Compare source column မရှိပါ။ Column ပိုလိုအပ်ပါသည်။</div>';
+        document.getElementById('noteSection').innerHTML = '<div class="note-item">Blank row မရှိပါ။</div>';
         return;
     }
     
@@ -242,59 +214,83 @@ function runCompare() {
     const arrowPairs = [];
     
     for (const blankRow of blankRows) {
-        const sourceArrIdx = DISPLAY_START_INDEX + sourceCol;
-        const sourceVal = tableData[blankRow][sourceArrIdx] || '';
+        // Blank position in linear
+        const blankLinear = toLinear(lastFilledCol, blankRow);
         
+        // Compare source = 131 rows BACK from blank position
+        const sourceLinear = blankLinear - GAP_ROWS;
+        const sourcePos = fromLinear(sourceLinear);
+        if (!sourcePos) continue;
+        
+        const sourceVal = tableData[sourcePos.row][DISPLAY_START_INDEX + sourcePos.col] || '';
         if (!sourceVal || sourceVal.trim() === '') continue;
         
-        // Generate permutations
+        // Highlight compare source in green table (red table)
+        const greenSrc = document.getElementById('green-r' + sourcePos.row + '-c' + sourcePos.col);
+        if (greenSrc) greenSrc.classList.add('compare-source');
+        
+        // Get permutations of source value
         const perms = getPermutations(sourceVal);
         
-        // Highlight compare source in green table
-        const greenSrcCell = document.getElementById('green-r' + blankRow + '-c' + sourceCol);
-        if (greenSrcCell) greenSrcCell.classList.add('compare-source');
-        
-        // Highlight in yellow table if visible
-        if (sourceCol >= 5) {
-            const yellowSrcCell = document.getElementById('yellow-r' + blankRow + '-c' + sourceCol);
-            if (yellowSrcCell) yellowSrcCell.classList.add('compare-source');
-        }
-        
-        // Search backward from sourceCol-1 toward column 00 for permutations in ALL rows
-        const matches = [];
-        for (let searchCol = sourceCol - 1; searchCol >= 0; searchCol--) {
-            const searchArrIdx = DISPLAY_START_INDEX + searchCol;
-            for (let searchRow = 0; searchRow < 24; searchRow++) {
-                const cellVal = tableData[searchRow][searchArrIdx] || '';
-                if (cellVal && perms.includes(cellVal)) {
-                    matches.push({ row: searchRow, col: searchCol, val: cellVal });
-                    
-                    // Highlight in green table
-                    const gCell = document.getElementById('green-r' + searchRow + '-c' + searchCol);
-                    if (gCell) gCell.classList.add('match-found');
-                    
-                    // Highlight in yellow table
-                    if (searchCol >= 5) {
-                        const yCell = document.getElementById('yellow-r' + searchRow + '-c' + searchCol);
-                        if (yCell) yCell.classList.add('match-found');
-                    }
-                    
-                    arrowPairs.push({
-                        fromRow: blankRow, fromCol: sourceCol,
-                        toRow: searchRow, toCol: searchCol
-                    });
-                }
+        // Search backward from sourcePos toward col 00 for permutations (in red/green table)
+        const foundInRed = [];
+        for (let searchLinear = sourceLinear - 1; searchLinear >= 0; searchLinear--) {
+            const sPos = fromLinear(searchLinear);
+            if (!sPos) continue;
+            const cellVal = tableData[sPos.row][DISPLAY_START_INDEX + sPos.col] || '';
+            if (cellVal && perms.includes(cellVal)) {
+                foundInRed.push({ col: sPos.col, row: sPos.row, val: cellVal, linear: searchLinear });
+                
+                // Highlight in green table
+                const gCell = document.getElementById('green-r' + sPos.row + '-c' + sPos.col);
+                if (gCell) gCell.classList.add('match-found');
             }
         }
         
-        // Add to notes - even 1 or 2 matches
-        if (matches.length > 0) {
-            const matchClass = matches.length >= 3 ? 'match-3plus' : '';
-            const matchList = matches.map(m => m.val + '(R' + (m.row+1) + ',C' + getDisplayColName(m.col) + ')').join(', ');
+        // For each found match in red table, calculate 131 rows FORWARD to find position in yellow table
+        const foundInYellow = [];
+        for (const match of foundInRed) {
+            const yellowLinear = match.linear + GAP_ROWS;
+            const yPos = fromLinear(yellowLinear);
+            if (!yPos) continue;
+            
+            const yVal = tableData[yPos.row][DISPLAY_START_INDEX + yPos.col] || '';
+            foundInYellow.push({ col: yPos.col, row: yPos.row, val: yVal, sourceMatch: match });
+            
+            // Highlight in yellow table (if col >= 5)
+            if (yPos.col >= 5) {
+                const yCell = document.getElementById('yellow-r' + yPos.row + '-c' + yPos.col);
+                if (yCell) yCell.classList.add('match-found');
+            }
+            
+            // Arrow from source to found in red
+            arrowPairs.push({
+                fromRow: sourcePos.row, fromCol: sourcePos.col,
+                toRow: match.row, toCol: match.col,
+                table: 'green'
+            });
+            
+            // Arrow in yellow table
+            if (yPos.col >= 5) {
+                arrowPairs.push({
+                    fromRow: blankRow, fromCol: lastFilledCol,
+                    toRow: yPos.row, toCol: yPos.col,
+                    table: 'yellow'
+                });
+            }
+        }
+        
+        // Add note - even 1 match
+        if (foundInRed.length > 0) {
+            const matchClass = foundInRed.length >= 3 ? 'match-3plus' : '';
+            const redList = foundInRed.map(m => m.val + '(R' + (m.row+1) + ',C' + colName(m.col) + ')').join(', ');
+            const yellowList = foundInYellow.map(m => 'C' + colName(m.col) + 'R' + (m.row+1)).join(', ');
             notes.push('<div class="note-item ' + matchClass + '">' +
-                'Row ' + (blankRow+1) + ' | Source: Col ' + getDisplayColName(sourceCol) + ' = ' + sourceVal + ' | ' +
-                'Perms: [' + perms.join(', ') + '] | ' +
-                'Found ' + matches.length + ': ' + matchList + '</div>');
+                'Blank: C' + colName(lastFilledCol) + ' R' + (blankRow+1) + ' | ' +
+                'Source: C' + colName(sourcePos.col) + ' R' + (sourcePos.row+1) + ' = ' + sourceVal + ' | ' +
+                'Perms: [' + perms.join(',') + '] | ' +
+                'Found(' + foundInRed.length + '): ' + redList + ' | ' +
+                'Yellow: ' + yellowList + '</div>');
         }
     }
     
@@ -305,7 +301,7 @@ function runCompare() {
         document.getElementById('noteSection').innerHTML = '<div class="note-item">Match မတွေ့ပါ။</div>';
     }
     
-    // Draw curved arrows
+    // Draw arrows
     drawArrows(arrowPairs);
 }
 
@@ -330,16 +326,13 @@ function drawArrows(pairs) {
     const yellowSvg = document.getElementById('yellowSvg');
     greenSvg.innerHTML = '';
     yellowSvg.innerHTML = '';
-    
     addArrowDefs(greenSvg);
     addArrowDefs(yellowSvg);
     
     for (const pair of pairs) {
-        drawOneArrow('green', greenSvg, pair.fromRow, pair.fromCol, pair.toRow, pair.toCol);
-    }
-    
-    for (const pair of pairs) {
-        if (pair.fromCol >= 5 && pair.toCol >= 5) {
+        if (pair.table === 'green') {
+            drawOneArrow('green', greenSvg, pair.fromRow, pair.fromCol, pair.toRow, pair.toCol);
+        } else {
             drawOneArrow('yellow', yellowSvg, pair.fromRow, pair.fromCol, pair.toRow, pair.toCol);
         }
     }
@@ -378,8 +371,6 @@ function drawOneArrow(prefix, svg, fromRow, fromCol, toRow, toCol) {
     const x2 = tRect.left + tRect.width / 2 - cRect.left;
     const y2 = tRect.top + tRect.height / 2 - cRect.top;
     
-    const midX = (x1 + x2) / 2;
-    const midY = (y1 + y2) / 2;
     const dx = x2 - x1;
     const dy = y2 - y1;
     const dist = Math.sqrt(dx * dx + dy * dy);
@@ -388,8 +379,8 @@ function drawOneArrow(prefix, svg, fromRow, fromCol, toRow, toCol) {
     const curveOff = Math.min(dist * 0.25, 40);
     const nx = -dy / dist * curveOff;
     const ny = dx / dist * curveOff;
-    const cx = midX + nx;
-    const cy = midY + ny;
+    const cx = (x1 + x2) / 2 + nx;
+    const cy = (y1 + y2) / 2 + ny;
     
     const ns = 'http://www.w3.org/2000/svg';
     const path = document.createElementNS(ns, 'path');
@@ -403,10 +394,8 @@ function drawOneArrow(prefix, svg, fromRow, fromCol, toRow, toCol) {
     
     const maxW = Math.max(x1, x2, cx) + 20;
     const maxH = Math.max(y1, y2, cy) + 20;
-    const curW = parseFloat(svg.style.width) || 0;
-    const curH = parseFloat(svg.style.height) || 0;
-    if (maxW > curW) svg.style.width = maxW + 'px';
-    if (maxH > curH) svg.style.height = maxH + 'px';
+    svg.style.width = Math.max(parseFloat(svg.style.width) || 0, maxW) + 'px';
+    svg.style.height = Math.max(parseFloat(svg.style.height) || 0, maxH) + 'px';
 }
 
 // ============ ZOOM ============
