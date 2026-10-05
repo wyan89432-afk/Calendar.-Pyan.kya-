@@ -274,13 +274,10 @@ function runCompare() {
     );
     if (greenSrc) greenSrc.classList.add('compare-source');
 
-    // Highlight the last number that starts the calculation in the 540 Yellow table.
-    const anchorYellow = document.getElementById(
-        'yellow-r' + lastFilledRow + '-c' + lastFilledCol
-    );
-    if (anchorYellow && lastFilledCol >= 5) {
-        anchorYellow.classList.add('compare-source');
-    }
+    // IMPORTANT:
+    // The 540 Yellow table value does NOT need to equal the Red value.
+    // Yellow is selected only by the calculated 107-gap POSITION.
+    // Therefore, do not compare the Yellow cell's number with the Red match.
 
     // Find every 3-digit permutation backward in the 540 Red area, from the
     // source position toward column 00.
@@ -317,6 +314,8 @@ function runCompare() {
         const yPos = fromLinear(yellowLinear);
         if (!yPos || yPos.col < 5) continue;
 
+        // Yellow value can be different. We use POSITION ONLY.
+        // The cell at this 107-gap position is highlighted regardless of its number.
         const yVal = tableData[yPos.row]?.[DISPLAY_START_INDEX + yPos.col] || '';
         foundInYellow.push({
             col: yPos.col,
