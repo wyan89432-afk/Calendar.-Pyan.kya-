@@ -446,7 +446,10 @@ function drawOneArrow(prefix, svg, fromRow, fromCol, toRow, toCol) {
 function setZoom(level) {
     zoomLevel = Math.max(0.4, Math.min(3, level));
     document.querySelectorAll('.table-inner-rel, #fixTable').forEach(el => {
-        el.style.transform = 'scale(' + zoomLevel + ')';
+        // CSS zoom keeps the table in normal layout flow, so sticky No cells
+        // continue to work while the user changes the table size.
+        el.style.zoom = zoomLevel;
+        el.style.transform = 'none';
         el.style.transformOrigin = 'top left';
     });
 }
