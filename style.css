@@ -273,16 +273,15 @@ h2 {
     font-weight: bold;
 }
 
-
-/* Sticky No column: the No column stays visible during horizontal scrolling */
+/* Sticky No column - shared by all three tables */
 #fixTable,
 .red-table,
 .yellow-table {
     border-collapse: separate;
     border-spacing: 0;
-    position: relative;
 }
 
+/* The first column is the fixed No column. */
 #fixTable th:first-child,
 #fixTable td:first-child,
 .red-table th:first-child,
@@ -290,7 +289,7 @@ h2 {
 .yellow-table th:first-child,
 .yellow-table td:first-child {
     position: sticky;
-    left: 0;
+    left: 0 !important;
     width: 42px;
     min-width: 42px;
     max-width: 42px;
@@ -298,38 +297,41 @@ h2 {
     background-clip: padding-box;
 }
 
+/* Header No cell must stay above both the scrolling cells and the header. */
 #fixTable th:first-child,
 .red-table th:first-child,
 .yellow-table th:first-child {
-    z-index: 40;
+    top: 0;
+    z-index: 100;
 }
 
+/* Body No cells must stay above the scrolling cells. */
 #fixTable td:first-child,
 .red-table td:first-child,
 .yellow-table td:first-child {
-    z-index: 30;
+    z-index: 90;
 }
 
+/* Keep each No column opaque so the scrolling data cannot show through it. */
 #fixTable th:first-child {
-    background: #2c3e50;
+    background: #2c3e50 !important;
 }
 #fixTable td:first-child {
     background: #444 !important;
 }
 .red-table th:first-child {
-    background: #800000;
+    background: #800000 !important;
 }
 .red-table td:first-child {
     background: #660000 !important;
 }
 .yellow-table th:first-child {
-    background: #cc0000;
+    background: #cc0000 !important;
 }
 .yellow-table td:first-child {
     background: #cccc00 !important;
 }
 
-/* Prevent the scrollable cells from showing through the sticky No column */
 #fixTable th:first-child,
 #fixTable td:first-child,
 .red-table th:first-child,
