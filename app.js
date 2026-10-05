@@ -6,6 +6,10 @@ let ROWS = Array.isArray(TABLE_DATA) ? TABLE_DATA.length : 24;
 const SOURCE_ROWS_URL = 'https://raw.githubusercontent.com/wyan89432-afk/key_and_one_change/main/fixed-table.csv';
 const GAP_BETWEEN = 107; // 107 cells are between the two positions
 const GAP_OFFSET = GAP_BETWEEN + 1; // position-to-position distance = 108
+const GAP_560_BETWEEN = 592; // 592 cells between 560 Red and Yellow positions
+const GAP_560_OFFSET = GAP_560_BETWEEN + 1; // position-to-position distance = 593
+const RED_560_START_HEADER = '73';
+const YELLOW_560_START_HEADER = '05';
 
 let zoomLevel = 1;
 let tableData = [];
@@ -104,6 +108,8 @@ function renderAll() {
     renderFixTable();
     renderGreenTable();
     renderYellowTable();
+    render560RedTable();
+    render560YellowTable();
 }
 
 function getDisplayColCount() {
@@ -213,7 +219,7 @@ function renderYellowTable() {
 }
 
 // ============ COMPARE LOGIC ============
-function runCompare() {
+function runCompare540() {
     renderGreenTable();
     renderYellowTable();
 
@@ -376,6 +382,287 @@ function runCompare() {
 
     drawArrows(arrowPairs);
 }
+
+// ============ 560 TABLES ============
+function getHeaderIndex(header) {
+    return tableHeaders.findIndex(h => String(h) === String(header));
+}
+
+function getLastUpdatedColumn(startIndex, endIndex) {
+    for (let c = endIndex; c >= startIndex; c--) {
+        for (let r = ROWS - 1; r >= 0; r--) {
+            const value = tableData[r]?.[c];
+            if (typeof value === 'string' && value.trim() !== '') return c;
+        }
+    }
+    return -1;
+}
+
+function toLinear560(absCol, row, startCol) {
+    return (absCol - startCol) * ROWS + row;
+}
+
+function fromLinear560(pos, startCol, endCol) {
+    if (pos < 0) return null;
+    const totalCols = endCol - startCol + 1;
+    const totalCells = totalCols * ROWS;
+    if (pos >= totalCells) return null;
+    return {
+        col: startCol + Math.floor(pos / ROWS),
+        row: pos % ROWS
+    };
+}
+
+function getHeaderDisplayName(absCol) {
+    const value = String(tableHeaders[absCol] ?? '');
+    return value.length < 2 ? value.padStart(2, '0') : value;
+}
+
+function render560RedTable() {
+    const table = document.getElementById('red560Table');
+    if (!table) return;
+
+    const startCol = getHeaderIndex(RED_560_START_HEADER);
+    const endCol = getLastUpdatedColumn(startCol, tableHeaders.length - 1);
+    if (startCol < 0 || endCol < startCol) {
+        table.innerHTML = '';
+        return;
+    }
+
+    let html = '<thead><tr><th>No</th>';
+    for (let c = startCol; c <= endCol; c++) {
+        html += '<th>' + getHeaderDisplayName(c) + '</th>';
+    }
+    html += '</tr></thead><tbody>';
+
+    for (let r = 0; r < ROWS; r++) {
+        html += '<tr><td class="row-num">' + (r + 1) + '</td>';
+        for (let c = startCol; c <= endCol; c++) {
+            const val = tableData[r]?.[c] || '';
+            const isEmpty = val.trim() === '';
+            html += '<td id="red560-r' + r + '-c' + c + '" class="' +
+                (isEmpty ? 'xxx-cell' : '') + '">' + (isEmpty ? 'xxx' : val) + '</td>';
+        }
+        html += '</tr>';
+    }
+
+    html += '</tbody>';
+    table.innerHTML = html;
+}
+
+function render560YellowTable() {
+    const table = document.getElementById('yellow560Table');
+    if (!table) return;
+
+    const startCol = getHeaderIndex(YELLOW_560_START_HEADER);
+    const endCol = getLastUpdatedColumn(startCol, tableHeaders.length - 1);
+    if (startCol < 0 || endCol < startCol) {
+        table.innerHTML = '';
+        return;
+    }
+
+    let html = '<thead><tr><th>No</th>';
+    for (let c = startCol; c <= endCol; c++) {
+        html += '<th>' + getHeaderDisplayName(c) + '</th>';
+    }
+    html += '</tr></thead><tbody>';
+
+    for (let r = 0; r < ROWS; r++) {
+        html += '<tr><td class="row-num">' + (r + 1) + '</td>';
+        for (let c = startCol; c <= endCol; c++) {
+            const val = tableData[r]?.[c] || '';
+            const isEmpty = val.trim() === '';
+            html += '<td id="yellow560-r' + r + '-c' + c + '" class="' +
+                (isEmpty ? 'xxx-cell' : '') + '">' + (isEmpty ? 'xxx' : val) + '</td>';
+        }
+        html += '</tr>';
+    }
+
+    html += '</tbody>';
+    table.innerHTML = html;
+}
+
+function runCompare560() {
+    render560RedTable();
+    render560YellowTable();
+
+    const redStart = getHeaderIndex(RED_560_START_HEADER);
+    const yellowStart = getHeaderIndex(YELLOW_560_START_HEADER);
+    const overallEnd = getLastUpdatedColumn(Math.min(redStart, yellowStart), tableHeaders.length - 1);
+
+    if (redStart < 0 || yellowStart < 0 || overallEnd < redStart || ROWS <= 0) {
+        return '<div class="note-item">560 data မရှိပါ။</div>';
+    }
+
+    // The 560 calculation uses the last real value in the last updated column
+    // as its Yellow-side anchor. Yellow's value is never compared to Red values.
+    const lastUpdatedCol = overallEnd;
+    let anchorRow = -1;
+
+    for (let r = ROWS - 1; r >= 0; r--) {
+        const value = tableData[r]?.[lastUpdatedCol];
+        if (typeof value === 'string' && value.trim() !== '') {
+            anchorRow = r;
+            break;
+        }
+    }
+
+    if (anchorRow < 0) {
+        return '<div class="note-item">560 last updated column မှ number မရှိပါ။</div>';
+    }
+
+    // Use one continuous 560 sequence from Red column 73 through the last updated column.
+    // This keeps the 592-gap calculation consistent across 99 -> 00 -> ... columns.
+    const anchorLinear = toLinear560(lastUpdatedCol, anchorRow, redStart);
+    const sourceLinear = anchorLinear - GAP_560_OFFSET;
+    const sourcePos = fromLinear560(sourceLinear, redStart, lastUpdatedCol);
+
+    if (!sourcePos || sourcePos.col < redStart) {
+        return '<div class="note-item">560 gap 592 အတွက် Red source position မရှိပါ။</div>';
+    }
+
+    const sourceVal = tableData[sourcePos.row]?.[sourcePos.col] || '';
+    if (!sourceVal.trim()) {
+        return '<div class="note-item">560 gap 592 source number မရှိပါ။</div>';
+    }
+
+    const sourceCell = document.getElementById(
+        'red560-r' + sourcePos.row + '-c' + sourcePos.col
+    );
+    if (sourceCell) sourceCell.classList.add('compare-source');
+
+    // Red numbers are the only numbers searched.
+    // 768 -> 768 / 786 / 687 / 867 ... all valid 3-digit permutations.
+    const perms = getPermutations(sourceVal);
+    const foundInRed = [];
+
+    for (let searchLinear = sourceLinear - 1; searchLinear >= 0; searchLinear--) {
+        const pos = fromLinear560(searchLinear, redStart, lastUpdatedCol);
+        if (!pos || pos.col < redStart) continue;
+
+        const cellVal = tableData[pos.row]?.[pos.col] || '';
+        if (cellVal && perms.includes(cellVal)) {
+            foundInRed.push({
+                col: pos.col,
+                row: pos.row,
+                val: cellVal,
+                linear: searchLinear
+            });
+
+            const cell = document.getElementById(
+                'red560-r' + pos.row + '-c' + pos.col
+            );
+            if (cell) cell.classList.add('match-found');
+        }
+    }
+
+    const foundInYellow = [];
+    const arrowPairs = [];
+
+    for (const match of foundInRed) {
+        const yellowLinear = match.linear + GAP_560_OFFSET;
+        const yPos = fromLinear560(yellowLinear, redStart, lastUpdatedCol);
+        if (!yPos || yPos.col < yellowStart) continue;
+
+        // Yellow is POSITION-ONLY. Its number does not need to equal the Red number.
+        const yVal = tableData[yPos.row]?.[yPos.col] || '';
+        const yCell = document.getElementById(
+            'yellow560-r' + yPos.row + '-c' + yPos.col
+        );
+
+        if (yCell) yCell.classList.add('match-found');
+
+        foundInYellow.push({
+            col: yPos.col,
+            row: yPos.row,
+            val: yVal,
+            sourceMatch: match
+        });
+
+        // Blue line inside the Red table.
+        arrowPairs.push({
+            fromRow: sourcePos.row,
+            fromCol: sourcePos.col,
+            toRow: match.row,
+            toCol: match.col,
+            table: 'red560'
+        });
+
+        // Blue line from the Yellow anchor to its 592-gap calculated position.
+        arrowPairs.push({
+            fromRow: anchorRow,
+            fromCol: lastUpdatedCol,
+            toRow: yPos.row,
+            toCol: yPos.col,
+            table: 'yellow560'
+        });
+    }
+
+    const redList = foundInRed
+        .map(m => m.val + '(R' + (m.row + 1) + ',C' + getHeaderDisplayName(m.col) + ')')
+        .join(', ');
+
+    const yellowList = foundInYellow
+        .map(m => (m.val || 'blank') + '(R' + (m.row + 1) + ',C' + getHeaderDisplayName(m.col) + ')')
+        .join(', ');
+
+    if (foundInRed.length === 0) {
+        return '<div class="note-item">560: Gap 592 အရ Red table မှာ permutation match မတွေ့ပါ။</div>';
+    }
+
+    const matchClass = foundInRed.length >= 3 ? 'match-3plus' : '';
+    return '<div class="note-item ' + matchClass + '">' +
+        '560 Last: C' + getHeaderDisplayName(lastUpdatedCol) + ' R' + (anchorRow + 1) +
+        ' = ' + (tableData[anchorRow][lastUpdatedCol] || '') +
+        ' | Gap: ' + GAP_560_BETWEEN +
+        ' | Red Source: C' + getHeaderDisplayName(sourcePos.col) + ' R' + (sourcePos.row + 1) +
+        ' = ' + sourceVal +
+        ' | Perms: [' + perms.join(',') + ']' +
+        ' | Found(' + foundInRed.length + '): ' + redList +
+        ' | Yellow(Position only): ' + yellowList +
+        '</div>';
+}
+
+function drawArrows560(pairs) {
+    const redSvg = document.getElementById('red560Svg');
+    const yellowSvg = document.getElementById('yellow560Svg');
+    if (!redSvg || !yellowSvg) return;
+
+    redSvg.innerHTML = '';
+    yellowSvg.innerHTML = '';
+    redSvg.style.width = '100%';
+    redSvg.style.height = '100%';
+    yellowSvg.style.width = '100%';
+    yellowSvg.style.height = '100%';
+
+    addArrowDefs(redSvg);
+    addArrowDefs(yellowSvg);
+
+    for (const pair of pairs) {
+        if (pair.table === 'red560') {
+            drawOneArrow('red560', redSvg, pair.fromRow, pair.fromCol, pair.toRow, pair.toCol);
+        } else if (pair.table === 'yellow560') {
+            drawOneArrow('yellow560', yellowSvg, pair.fromRow, pair.fromCol, pair.toRow, pair.toCol);
+        }
+    }
+}
+
+function runCompare() {
+    const noteSection = document.getElementById('noteSection');
+    runCompare540();
+    const note540 = noteSection.innerHTML;
+    const result560 = runCompare560();
+
+    // Keep 540 results and 560 results together in the Notes section.
+    noteSection.innerHTML =
+        '<div class="compare-group"><div class="compare-group-title">540 Compare Result</div>' +
+        note540 +
+        '</div>' +
+        '<div class="compare-group"><div class="compare-group-title">560 Compare Result</div>' +
+        result560 +
+        '</div>';
+}
+
 function getPermutations(numStr) {
     const digits = numStr.split('');
     const perms = new Set();
