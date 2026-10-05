@@ -172,15 +172,15 @@ h2 {
 }
 
 .red-table td.compare-source {
-    background: #00aa00 !important;
+    background: #0080ff !important;
     color: #fff !important;
-    border: 2px solid #00ff00;
+    border: 2px solid #0044cc !important;
 }
 
 .red-table td.match-found {
-    background: #ffdd00 !important;
-    color: #000 !important;
-    border: 2px solid #00aa00;
+    background: #0080ff !important;
+    color: #fff !important;
+    border: 2px solid #0044cc !important;
 }
 
 /* Yellow Table (Table 2) */
@@ -217,15 +217,15 @@ h2 {
 }
 
 .yellow-table td.compare-source {
-    background: #00cc00 !important;
+    background: #0080ff !important;
     color: #fff !important;
-    border: 2px solid #006600;
+    border: 2px solid #0044cc !important;
 }
 
 .yellow-table td.match-found {
-    background: #ffff00 !important;
-    color: #000 !important;
-    border: 2px solid #00aa00;
+    background: #0080ff !important;
+    color: #fff !important;
+    border: 2px solid #0044cc !important;
 }
 
 /* Note Section */
