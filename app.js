@@ -4,7 +4,8 @@
 const DISPLAY_START_INDEX = 31;
 let ROWS = Array.isArray(TABLE_DATA) ? TABLE_DATA.length : 24;
 const SOURCE_ROWS_URL = 'https://raw.githubusercontent.com/wyan89432-afk/key_and_one_change/main/fixed-table.csv';
-const GAP_ROWS = 131; // 5 col * 24 rows + 11 rows = 131
+const GAP_BETWEEN = 107; // 107 cells are between the two positions
+const GAP_OFFSET = GAP_BETWEEN + 1; // position-to-position distance = 108
 
 let zoomLevel = 1;
 let tableData = [];
@@ -262,14 +263,14 @@ function runCompare() {
         const blankLinear = toLinear(lastFilledCol, blankRow);
         
         // Compare source = 131 rows BACK from blank position
-        const sourceLinear = blankLinear - GAP_ROWS;
+        const sourceLinear = blankLinear - GAP_OFFSET;
         const sourcePos = fromLinear(sourceLinear);
         if (!sourcePos) continue;
         
         const sourceVal = tableData[sourcePos.row][DISPLAY_START_INDEX + sourcePos.col] || '';
         if (!sourceVal || sourceVal.trim() === '') continue;
         
-        // Highlight compare source in green table (red table)
+        // Highlight compare source in the 540 Red table
         const greenSrc = document.getElementById('green-r' + sourcePos.row + '-c' + sourcePos.col);
         if (greenSrc) greenSrc.classList.add('compare-source');
         
@@ -285,7 +286,7 @@ function runCompare() {
             if (cellVal && perms.includes(cellVal)) {
                 foundInRed.push({ col: sPos.col, row: sPos.row, val: cellVal, linear: searchLinear });
                 
-                // Highlight in green table
+                // Highlight in the 540 Red table
                 const gCell = document.getElementById('green-r' + sPos.row + '-c' + sPos.col);
                 if (gCell) gCell.classList.add('match-found');
             }
@@ -294,27 +295,27 @@ function runCompare() {
         // For each found match in red table, calculate 131 rows FORWARD to find position in yellow table
         const foundInYellow = [];
         for (const match of foundInRed) {
-            const yellowLinear = match.linear + GAP_ROWS;
+            const yellowLinear = match.linear + GAP_OFFSET;
             const yPos = fromLinear(yellowLinear);
             if (!yPos) continue;
             
             const yVal = tableData[yPos.row][DISPLAY_START_INDEX + yPos.col] || '';
             foundInYellow.push({ col: yPos.col, row: yPos.row, val: yVal, sourceMatch: match });
             
-            // Highlight in yellow table (if col >= 5)
+            // Highlight in the 540 Yellow table (if col >= 5)
             if (yPos.col >= 5) {
                 const yCell = document.getElementById('yellow-r' + yPos.row + '-c' + yPos.col);
                 if (yCell) yCell.classList.add('match-found');
             }
             
-            // Arrow from source to found in red
+            // Blue line from source to found in Red
             arrowPairs.push({
                 fromRow: sourcePos.row, fromCol: sourcePos.col,
                 toRow: match.row, toCol: match.col,
                 table: 'green'
             });
             
-            // Arrow in yellow table
+            // Blue line in Yellow table
             if (yPos.col >= 5) {
                 arrowPairs.push({
                     fromRow: blankRow, fromCol: lastFilledCol,
@@ -332,7 +333,7 @@ function runCompare() {
             notes.push('<div class="note-item ' + matchClass + '">' +
                 'Blank: C' + colName(lastFilledCol) + ' R' + (blankRow+1) + ' | ' +
                 'Source: C' + colName(sourcePos.col) + ' R' + (sourcePos.row+1) + ' = ' + sourceVal + ' | ' +
-                'Perms: [' + perms.join(',') + '] | ' +
+                'Gap: ' + GAP_BETWEEN + ' | Perms: [' + perms.join(',') + '] | ' +
                 'Found(' + foundInRed.length + '): ' + redList + ' | ' +
                 'Yellow: ' + yellowList + '</div>');
         }
@@ -394,7 +395,7 @@ function addArrowDefs(svg) {
     marker.setAttribute('orient', 'auto');
     const poly = document.createElementNS(ns, 'polygon');
     poly.setAttribute('points', '0 0, 8 3, 0 6');
-    poly.setAttribute('fill', '#00ff00');
+    poly.setAttribute('fill', '#0080ff');
     marker.appendChild(poly);
     defs.appendChild(marker);
     svg.appendChild(defs);
@@ -430,7 +431,7 @@ function drawOneArrow(prefix, svg, fromRow, fromCol, toRow, toCol) {
     const path = document.createElementNS(ns, 'path');
     path.setAttribute('d', 'M ' + x1 + ' ' + y1 + ' Q ' + cx + ' ' + cy + ' ' + x2 + ' ' + y2);
     path.setAttribute('fill', 'none');
-    path.setAttribute('stroke', '#00ff00');
+    path.setAttribute('stroke', '#0080ff');
     path.setAttribute('stroke-width', '1.5');
     path.setAttribute('stroke-opacity', '0.7');
     path.setAttribute('marker-end', 'url(#ah-' + svg.id + ')');
