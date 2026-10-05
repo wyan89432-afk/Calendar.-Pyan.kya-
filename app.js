@@ -60,14 +60,14 @@ async function syncRowCountFromSource() {
         const sourceRows = Math.max(0, lines.length - 1); // header is row 0
         if (!sourceRows) throw new Error('source has no data rows');
 
-        ROWS = sourceRows;
+        // Never shrink below the rows that actually exist in the fixed table.
+        // The source file controls row growth, but must not hide newly fixed rows.
+        ROWS = Math.max(sourceRows, tableData.length, Array.isArray(TABLE_DATA) ? TABLE_DATA.length : 0);
 
-        // Keep existing Calendar data; safely resize only the row container.
+        // Keep existing Calendar data; safely resize only when more rows are needed.
         const width = tableHeaders.length;
         if (tableData.length < ROWS) {
             while (tableData.length < ROWS) tableData.push(new Array(width).fill(''));
-        } else if (tableData.length > ROWS) {
-            tableData = tableData.slice(0, ROWS);
         }
 
         for (const col of addedColumns) {
