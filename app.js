@@ -176,6 +176,8 @@ function onCellEdit(input) {
     saveData();
     renderGreenTable();
     renderYellowTable();
+    render560RedTable();
+    render560YellowTable();
 }
 
 // ============ GREEN/RED TABLE (Col 00 to Last) ============
@@ -485,6 +487,7 @@ function render560YellowTable() {
 function runCompare560() {
     render560RedTable();
     render560YellowTable();
+    drawArrows560([]);
 
     const redStart = getHeaderIndex(RED_560_START_HEADER);
     const yellowStart = getHeaderIndex(YELLOW_560_START_HEADER);
@@ -609,6 +612,8 @@ function runCompare560() {
     if (foundInRed.length === 0) {
         return '<div class="note-item">560: Gap 592 အရ Red table မှာ permutation match မတွေ့ပါ။</div>';
     }
+
+    drawArrows560(arrowPairs);
 
     const matchClass = foundInRed.length >= 3 ? 'match-3plus' : '';
     return '<div class="note-item ' + matchClass + '">' +
