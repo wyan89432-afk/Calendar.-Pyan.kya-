@@ -216,140 +216,167 @@ function renderYellowTable() {
 function runCompare() {
     renderGreenTable();
     renderYellowTable();
-    
+
     const totalCols = getDisplayColCount();
-    
-    // Find last column with any data
+    if (totalCols <= 0 || ROWS <= 0) {
+        document.getElementById('noteSection').innerHTML = '<div class="note-item">Data မရှိပါ။</div>';
+        return;
+    }
+
+    /*
+     * Compare starts from the LAST REAL NUMBER in the LAST UPDATED column.
+     * It does NOT search for blank rows.
+     *
+     * The last trailing 000 placeholders are removed from data.js, and any
+     * remaining 000 inside the table is treated as a real number.
+     */
     let lastFilledCol = -1;
+    let lastFilledRow = -1;
+
     for (let c = totalCols - 1; c >= 0; c--) {
-        for (let r = 0; r < ROWS; r++) {
-            if (tableData[r][DISPLAY_START_INDEX + c] && tableData[r][DISPLAY_START_INDEX + c].trim() !== '') {
+        for (let r = ROWS - 1; r >= 0; r--) {
+            const value = tableData[r]?.[DISPLAY_START_INDEX + c];
+            if (typeof value === 'string' && value.trim() !== '') {
                 lastFilledCol = c;
+                lastFilledRow = r;
                 break;
             }
         }
         if (lastFilledCol >= 0) break;
     }
-    
-    if (lastFilledCol < 0) {
+
+    if (lastFilledCol < 0 || lastFilledRow < 0) {
         document.getElementById('noteSection').innerHTML = '<div class="note-item">Data မရှိပါ။</div>';
         return;
     }
-    
-    // Find last filled row in lastFilledCol
-    let lastFilledRow = -1;
-    for (let r = 0; r < ROWS; r++) {
-        if (tableData[r][DISPLAY_START_INDEX + lastFilledCol] && tableData[r][DISPLAY_START_INDEX + lastFilledCol].trim() !== '') {
-            lastFilledRow = r;
-        }
-    }
-    
-    // Blank rows in lastFilledCol
-    const blankRows = [];
-    for (let r = lastFilledRow + 1; r < ROWS; r++) {
-        blankRows.push(r);
-    }
-    
-    if (blankRows.length === 0) {
-        document.getElementById('noteSection').innerHTML = '<div class="note-item">Blank row မရှိပါ။</div>';
+
+    // This is the single calculation anchor: the last number in the last updated column.
+    const anchorLinear = toLinear(lastFilledCol, lastFilledRow);
+    const sourceLinear = anchorLinear - GAP_OFFSET;
+    const sourcePos = fromLinear(sourceLinear);
+
+    if (!sourcePos) {
+        document.getElementById('noteSection').innerHTML =
+            '<div class="note-item">107 gap အတွက် source position မရှိပါ။</div>';
         return;
     }
-    
-    const notes = [];
-    const arrowPairs = [];
-    
-    for (const blankRow of blankRows) {
-        // Blank position in linear
-        const blankLinear = toLinear(lastFilledCol, blankRow);
-        
-        // Compare source = 131 rows BACK from blank position
-        const sourceLinear = blankLinear - GAP_OFFSET;
-        const sourcePos = fromLinear(sourceLinear);
-        if (!sourcePos) continue;
-        
-        const sourceVal = tableData[sourcePos.row][DISPLAY_START_INDEX + sourcePos.col] || '';
-        if (!sourceVal || sourceVal.trim() === '') continue;
-        
-        // Highlight compare source in the 540 Red table
-        const greenSrc = document.getElementById('green-r' + sourcePos.row + '-c' + sourcePos.col);
-        if (greenSrc) greenSrc.classList.add('compare-source');
-        
-        // Get permutations of source value
-        const perms = getPermutations(sourceVal);
-        
-        // Search backward from sourcePos toward col 00 for permutations (in red/green table)
-        const foundInRed = [];
-        for (let searchLinear = sourceLinear - 1; searchLinear >= 0; searchLinear--) {
-            const sPos = fromLinear(searchLinear);
-            if (!sPos) continue;
-            const cellVal = tableData[sPos.row][DISPLAY_START_INDEX + sPos.col] || '';
-            if (cellVal && perms.includes(cellVal)) {
-                foundInRed.push({ col: sPos.col, row: sPos.row, val: cellVal, linear: searchLinear });
-                
-                // Highlight in the 540 Red table
-                const gCell = document.getElementById('green-r' + sPos.row + '-c' + sPos.col);
-                if (gCell) gCell.classList.add('match-found');
-            }
-        }
-        
-        // For each found match in red table, calculate 131 rows FORWARD to find position in yellow table
-        const foundInYellow = [];
-        for (const match of foundInRed) {
-            const yellowLinear = match.linear + GAP_OFFSET;
-            const yPos = fromLinear(yellowLinear);
-            if (!yPos) continue;
-            
-            const yVal = tableData[yPos.row][DISPLAY_START_INDEX + yPos.col] || '';
-            foundInYellow.push({ col: yPos.col, row: yPos.row, val: yVal, sourceMatch: match });
-            
-            // Highlight in the 540 Yellow table (if col >= 5)
-            if (yPos.col >= 5) {
-                const yCell = document.getElementById('yellow-r' + yPos.row + '-c' + yPos.col);
-                if (yCell) yCell.classList.add('match-found');
-            }
-            
-            // Blue line from source to found in Red
-            arrowPairs.push({
-                fromRow: sourcePos.row, fromCol: sourcePos.col,
-                toRow: match.row, toCol: match.col,
-                table: 'green'
+
+    const sourceVal = tableData[sourcePos.row]?.[DISPLAY_START_INDEX + sourcePos.col] || '';
+    if (!sourceVal.trim()) {
+        document.getElementById('noteSection').innerHTML =
+            '<div class="note-item">107 gap source number မရှိပါ။</div>';
+        return;
+    }
+
+    // Highlight the 107-gap source position in the 540 Red table.
+    const greenSrc = document.getElementById(
+        'green-r' + sourcePos.row + '-c' + sourcePos.col
+    );
+    if (greenSrc) greenSrc.classList.add('compare-source');
+
+    // Highlight the last number that starts the calculation in the 540 Yellow table.
+    const anchorYellow = document.getElementById(
+        'yellow-r' + lastFilledRow + '-c' + lastFilledCol
+    );
+    if (anchorYellow && lastFilledCol >= 5) {
+        anchorYellow.classList.add('compare-source');
+    }
+
+    // Find every 3-digit permutation backward in the 540 Red area, from the
+    // source position toward column 00.
+    const perms = getPermutations(sourceVal);
+    const foundInRed = [];
+
+    for (let searchLinear = sourceLinear - 1; searchLinear >= 0; searchLinear--) {
+        const sPos = fromLinear(searchLinear);
+        if (!sPos) continue;
+
+        const cellVal = tableData[sPos.row]?.[DISPLAY_START_INDEX + sPos.col] || '';
+        if (cellVal && perms.includes(cellVal)) {
+            foundInRed.push({
+                col: sPos.col,
+                row: sPos.row,
+                val: cellVal,
+                linear: searchLinear
             });
-            
-            // Blue line in Yellow table
-            if (yPos.col >= 5) {
-                arrowPairs.push({
-                    fromRow: blankRow, fromCol: lastFilledCol,
-                    toRow: yPos.row, toCol: yPos.col,
-                    table: 'yellow'
-                });
-            }
-        }
-        
-        // Add note - even 1 match
-        if (foundInRed.length > 0) {
-            const matchClass = foundInRed.length >= 3 ? 'match-3plus' : '';
-            const redList = foundInRed.map(m => m.val + '(R' + (m.row+1) + ',C' + colName(m.col) + ')').join(', ');
-            const yellowList = foundInYellow.map(m => 'C' + colName(m.col) + 'R' + (m.row+1)).join(', ');
-            notes.push('<div class="note-item ' + matchClass + '">' +
-                'Blank: C' + colName(lastFilledCol) + ' R' + (blankRow+1) + ' | ' +
-                'Source: C' + colName(sourcePos.col) + ' R' + (sourcePos.row+1) + ' = ' + sourceVal + ' | ' +
-                'Gap: ' + GAP_BETWEEN + ' | Perms: [' + perms.join(',') + '] | ' +
-                'Found(' + foundInRed.length + '): ' + redList + ' | ' +
-                'Yellow: ' + yellowList + '</div>');
+
+            const gCell = document.getElementById(
+                'green-r' + sPos.row + '-c' + sPos.col
+            );
+            if (gCell) gCell.classList.add('match-found');
         }
     }
-    
-    // Render notes
-    if (notes.length > 0) {
-        document.getElementById('noteSection').innerHTML = notes.join('');
+
+    // Every Red match is moved forward by the same 107-gap offset.
+    // Only positions inside the 540 Yellow area (05 -> last updated column) are shown.
+    const foundInYellow = [];
+    const arrowPairs = [];
+
+    for (const match of foundInRed) {
+        const yellowLinear = match.linear + GAP_OFFSET;
+        const yPos = fromLinear(yellowLinear);
+        if (!yPos || yPos.col < 5) continue;
+
+        const yVal = tableData[yPos.row]?.[DISPLAY_START_INDEX + yPos.col] || '';
+        foundInYellow.push({
+            col: yPos.col,
+            row: yPos.row,
+            val: yVal,
+            sourceMatch: match
+        });
+
+        const yCell = document.getElementById(
+            'yellow-r' + yPos.row + '-c' + yPos.col
+        );
+        if (yCell) yCell.classList.add('match-found');
+
+        // Blue line: calculation source -> Red match.
+        arrowPairs.push({
+            fromRow: sourcePos.row,
+            fromCol: sourcePos.col,
+            toRow: match.row,
+            toCol: match.col,
+            table: 'green'
+        });
+
+        // Blue line: Yellow anchor -> corresponding Yellow position.
+        arrowPairs.push({
+            fromRow: lastFilledRow,
+            fromCol: lastFilledCol,
+            toRow: yPos.row,
+            toCol: yPos.col,
+            table: 'yellow'
+        });
+    }
+
+    const redList = foundInRed
+        .map(m => m.val + '(R' + (m.row + 1) + ',C' + colName(m.col) + ')')
+        .join(', ');
+
+    const yellowList = foundInYellow
+        .map(m => (m.val || 'blank') + '(R' + (m.row + 1) + ',C' + colName(m.col) + ')')
+        .join(', ');
+
+    if (foundInRed.length > 0) {
+        const matchClass = foundInRed.length >= 3 ? 'match-3plus' : '';
+        document.getElementById('noteSection').innerHTML =
+            '<div class="note-item ' + matchClass + '">' +
+            'Last: C' + colName(lastFilledCol) + ' R' + (lastFilledRow + 1) + ' = ' +
+            (tableData[lastFilledRow][DISPLAY_START_INDEX + lastFilledCol] || '') +
+            ' | Gap: ' + GAP_BETWEEN +
+            ' | Red Source: C' + colName(sourcePos.col) + ' R' + (sourcePos.row + 1) +
+            ' = ' + sourceVal +
+            ' | Perms: [' + perms.join(',') + ']' +
+            ' | Found(' + foundInRed.length + '): ' + redList +
+            ' | Yellow: ' + yellowList +
+            '</div>';
     } else {
-        document.getElementById('noteSection').innerHTML = '<div class="note-item">Match မတွေ့ပါ။</div>';
+        document.getElementById('noteSection').innerHTML =
+            '<div class="note-item">107 gap အရ Red table မှာ match မတွေ့ပါ။</div>';
     }
-    
-    // Draw arrows
+
     drawArrows(arrowPairs);
 }
-
 function getPermutations(numStr) {
     const digits = numStr.split('');
     const perms = new Set();
