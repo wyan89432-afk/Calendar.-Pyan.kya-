@@ -2,7 +2,8 @@
 // Display columns start from index 31 (header "0") as display "00"
 
 const DISPLAY_START_INDEX = 31;
-const ROWS = 24;
+let ROWS = Array.isArray(TABLE_DATA) ? TABLE_DATA.length : 24;
+const SOURCE_ROWS_URL = 'https://raw.githubusercontent.com/wyan89432-afk/key_and_one_change/main/fixed-table.csv';
 const GAP_ROWS = 131; // 5 col * 24 rows + 11 rows = 131
 
 let zoomLevel = 1;
@@ -13,6 +14,7 @@ let addedColumns = [];
 document.addEventListener('DOMContentLoaded', () => {
     loadData();
     renderAll();
+    syncRowCountFromSource();
     document.getElementById('addColBtn').addEventListener('click', addColumn);
     document.getElementById('compareBtn').addEventListener('click', runCompare);
     document.getElementById('zoomIn').addEventListener('click', () => setZoom(zoomLevel + 0.1));
@@ -23,6 +25,7 @@ document.addEventListener('DOMContentLoaded', () => {
 function loadData() {
     tableHeaders = [...TABLE_HEADERS];
     tableData = TABLE_DATA.map(row => [...row]);
+    ROWS = tableData.length || 24;
     const saved = localStorage.getItem('calendarPyanKya_data');
     if (saved) {
         try {
@@ -37,6 +40,46 @@ function loadData() {
                 }
             }
         } catch(e) {}
+    }
+}
+
+/*
+ * Read only the row count from key_and_one_change's fixed table.
+ * Calendar values are not imported or overwritten.
+ * If the source cannot be reached, the local row count is kept.
+ */
+async function syncRowCountFromSource() {
+    const fallbackRows = Array.isArray(TABLE_DATA) ? TABLE_DATA.length : 24;
+    try {
+        const response = await fetch(SOURCE_ROWS_URL, { cache: 'no-store' });
+        if (!response.ok) throw new Error('source unavailable');
+
+        const csv = (await response.text()).replace(/^\uFEFF/, '');
+        const lines = csv.split(/\r?\n/).map(line => line.trim()).filter(Boolean);
+        const sourceRows = Math.max(0, lines.length - 1); // header is row 0
+        if (!sourceRows) throw new Error('source has no data rows');
+
+        ROWS = sourceRows;
+
+        // Keep existing Calendar data; safely resize only the row container.
+        const width = tableHeaders.length;
+        if (tableData.length < ROWS) {
+            while (tableData.length < ROWS) tableData.push(new Array(width).fill(''));
+        } else if (tableData.length > ROWS) {
+            tableData = tableData.slice(0, ROWS);
+        }
+
+        for (const col of addedColumns) {
+            col.data = Array.from({ length: ROWS }, (_, r) => col.data?.[r] || '');
+        }
+
+        renderAll();
+    } catch (e) {
+        ROWS = fallbackRows;
+        // Silent fallback: network/CORS/source errors must never break Calendar.
+        if (tableData.length > ROWS) tableData = tableData.slice(0, ROWS);
+        while (tableData.length < ROWS) tableData.push(new Array(tableHeaders.length).fill(''));
+        renderAll();
     }
 }
 
@@ -94,7 +137,7 @@ function renderFixTable() {
         html += '<tr><td class="row-num">' + (r + 1) + '</td>';
         for (let c = 0; c < totalCols; c++) {
             const arrIdx = DISPLAY_START_INDEX + c;
-            const val = tableData[r][arrIdx] || '';
+            const val = tableData[r]?.[arrIdx] || '';
             const isEmpty = val.trim() === '';
             html += '<td class="' + (isEmpty ? 'empty-cell' : '') + '">';
             html += '<input type="text" maxlength="3" value="' + (isEmpty ? '' : val) + '" ';
@@ -116,6 +159,7 @@ function onCellEdit(input) {
         val = val.padStart(3, '0');
         input.value = val;
     }
+    if (!tableData[row]) tableData[row] = new Array(tableHeaders.length).fill('');
     tableData[row][col] = val;
     const origLen = TABLE_HEADERS.length;
     if (col >= origLen) {
@@ -137,7 +181,7 @@ function renderGreenTable() {
     for (let r = 0; r < ROWS; r++) {
         html += '<tr><td class="row-num">' + (r + 1) + '</td>';
         for (let c = 0; c < totalCols; c++) {
-            const val = tableData[r][DISPLAY_START_INDEX + c] || '';
+            const val = tableData[r]?.[DISPLAY_START_INDEX + c] || '';
             const isEmpty = val.trim() === '';
             html += '<td id="green-r' + r + '-c' + c + '" class="' + (isEmpty ? 'xxx-cell' : '') + '">' + (isEmpty ? 'xxx' : val) + '</td>';
         }
