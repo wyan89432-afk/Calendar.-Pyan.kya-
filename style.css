@@ -272,3 +272,52 @@ h2 {
     color: #000 !important;
     font-weight: bold;
 }
+
+
+/* Keep the No column fixed while the table scrolls horizontally */
+#fixTable th:first-child,
+#fixTable td:first-child,
+.red-table th:first-child,
+.red-table td:first-child,
+.yellow-table th:first-child,
+.yellow-table td:first-child {
+    position: sticky;
+    left: 0;
+    z-index: 20;
+    min-width: 42px;
+    width: 42px;
+}
+
+/* Header cells must stay above the sticky No column/body cells */
+#fixTable th:first-child,
+.red-table th:first-child,
+.yellow-table th:first-child {
+    z-index: 30;
+}
+
+/* Preserve each table's original No-column color while it is sticky */
+#fixTable th:first-child {
+    background: #2c3e50;
+}
+#fixTable td:first-child {
+    background: #444 !important;
+}
+.red-table th:first-child {
+    background: #800000;
+}
+.red-table td:first-child {
+    background: #660000 !important;
+}
+.yellow-table th:first-child {
+    background: #cc0000;
+}
+.yellow-table td:first-child {
+    background: #cccc00 !important;
+}
+
+/* Keep the sticky No column visually above the horizontal-scroll content */
+#fixTable,
+.red-table,
+.yellow-table {
+    position: relative;
+}
