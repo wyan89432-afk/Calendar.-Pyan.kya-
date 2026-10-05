@@ -487,8 +487,6 @@ function render560YellowTable() {
 function runCompare560() {
     render560RedTable();
     render560YellowTable();
-    drawArrows560([]);
-
     const redStart = getHeaderIndex(RED_560_START_HEADER);
     const yellowStart = getHeaderIndex(YELLOW_560_START_HEADER);
     const overallEnd = getLastUpdatedColumn(Math.min(redStart, yellowStart), tableHeaders.length - 1);
