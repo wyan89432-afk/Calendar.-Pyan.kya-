@@ -386,8 +386,15 @@ function runCompare540() {
 }
 
 // ============ 560 TABLES ============
+function normalizeHeaderValue(value) {
+    const s = String(value ?? '').trim();
+    if (/^\d+$/.test(s)) return String(parseInt(s, 10));
+    return s;
+}
+
 function getHeaderIndex(header) {
-    return tableHeaders.findIndex(h => String(h) === String(header));
+    const target = normalizeHeaderValue(header);
+    return tableHeaders.findIndex(h => normalizeHeaderValue(h) === target);
 }
 
 function getLastUpdatedColumn(startIndex, endIndex) {
