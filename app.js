@@ -701,7 +701,7 @@ function drawArrows560(pairs) {
 
 // ============ 268 TABLES ============
 const GAP_268_BETWEEN = 431; // 431 cells are between the two positions
-const GAP_268_OFFSET = GAP_268_BETWEEN + 1; // position-to-position distance = 237
+const GAP_268_OFFSET = GAP_268_BETWEEN + 1; // position-to-position distance = 432
 const RED_268_START_HEADER = '84';
 const YELLOW_268_START_HEADER = '00';
 
