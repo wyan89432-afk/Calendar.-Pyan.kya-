@@ -112,6 +112,29 @@ function renderAll() {
     render560YellowTable();
 }
 
+function clearBlueHighlights() {
+    document.querySelectorAll(
+        '#greenTable td.match-found, #greenTable td.compare-source,' +
+        '#yellowTable td.match-found, #yellowTable td.compare-source,' +
+        '#red560Table td.match-found, #red560Table td.compare-source,' +
+        '#yellow560Table td.match-found, #yellow560Table td.compare-source'
+    ).forEach(cell => {
+        cell.classList.remove('match-found', 'compare-source');
+        cell.style.backgroundColor = '';
+        cell.style.color = '';
+        cell.style.border = '';
+    });
+}
+
+function markBlueCell(cell) {
+    if (!cell) return;
+    cell.classList.add('match-found');
+    cell.style.setProperty('background-color', '#0080ff', 'important');
+    cell.style.setProperty('color', '#ffffff', 'important');
+    cell.style.setProperty('border', '2px solid #0044cc', 'important');
+}
+
+
 function getDisplayColCount() {
     return tableHeaders.length - DISPLAY_START_INDEX;
 }
@@ -280,7 +303,7 @@ function runCompare540() {
     const greenSrc = document.getElementById(
         'green-r' + sourcePos.row + '-c' + sourcePos.col
     );
-    if (greenSrc) greenSrc.classList.add('compare-source');
+    if (greenSrc) markBlueCell(greenSrc);
 
     // IMPORTANT:
     // The 540 Yellow table value does NOT need to equal the Red value.
@@ -308,7 +331,7 @@ function runCompare540() {
             const gCell = document.getElementById(
                 'green-r' + sPos.row + '-c' + sPos.col
             );
-            if (gCell) gCell.classList.add('match-found');
+            if (gCell) markBlueCell(gCell);
         }
     }
 
@@ -335,7 +358,7 @@ function runCompare540() {
         const yCell = document.getElementById(
             'yellow-r' + yPos.row + '-c' + yPos.col
         );
-        if (yCell) yCell.classList.add('match-found');
+        if (yCell) markBlueCell(yCell);
 
         // Blue line: calculation source -> Red match.
         arrowPairs.push({
@@ -537,7 +560,7 @@ function runCompare560() {
     const sourceCell = document.getElementById(
         'red560-r' + sourcePos.row + '-c' + sourcePos.col
     );
-    if (sourceCell) sourceCell.classList.add('compare-source');
+    if (sourceCell) markBlueCell(sourceCell);
 
     // Red numbers are the only numbers searched.
     // 768 -> 768 / 786 / 687 / 867 ... all valid 3-digit permutations.
@@ -560,7 +583,7 @@ function runCompare560() {
             const cell = document.getElementById(
                 'red560-r' + pos.row + '-c' + pos.col
             );
-            if (cell) cell.classList.add('match-found');
+            if (cell) markBlueCell(cell);
         }
     }
 
@@ -658,6 +681,7 @@ function drawArrows560(pairs) {
 }
 
 function runCompare() {
+    clearBlueHighlights();
     const noteSection = document.getElementById('noteSection');
     runCompare540();
     const note540 = noteSection.innerHTML;
@@ -769,7 +793,7 @@ function drawOneArrow(prefix, svg, fromRow, fromCol, toRow, toCol) {
 // ============ ZOOM ============
 function setZoom(level) {
     zoomLevel = Math.max(0.4, Math.min(3, level));
-    document.querySelectorAll('.table-inner-rel, #fixTable').forEach(el => {
+    document.querySelectorAll('.table-inner-rel, #fixTable, .reference-image-wrapper svg').forEach(el => {
         // CSS zoom keeps the table in normal layout flow, so sticky No cells
         // continue to work while the user changes the table size.
         el.style.zoom = zoomLevel;
