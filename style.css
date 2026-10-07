@@ -352,3 +352,20 @@ h2 {
     font-weight: bold;
     margin-bottom: 4px;
 }
+
+
+/* Keep the embedded reference picture fully visible and sharp on narrow screens. */
+.reference-image-wrapper {
+    width: 100%;
+    overflow-x: auto;
+    overflow-y: hidden;
+    margin: 6px 0 10px;
+    background: #ffffff;
+}
+
+.reference-image-wrapper svg {
+    display: block;
+    width: 994px;
+    height: 1536px;
+    max-width: none;
+}
