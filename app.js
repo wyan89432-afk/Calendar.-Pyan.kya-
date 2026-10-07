@@ -205,6 +205,8 @@ function onCellEdit(input) {
     renderYellowTable();
     render560RedTable();
     render560YellowTable();
+    render370RedTable();
+    render370YellowTable();
 }
 
 // ============ GREEN/RED TABLE (Col 00 to Last) ============
