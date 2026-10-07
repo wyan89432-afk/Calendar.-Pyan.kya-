@@ -158,6 +158,56 @@ function markBlueCell(cell) {
     cell.style.setProperty('border', '2px solid #0044cc', 'important');
 }
 
+function renderYellowSummary(summaryId, foundInRed, foundInYellow) {
+    const container = document.getElementById(summaryId);
+    if (!container) return;
+
+    const groups = new Map();
+
+    // Group Yellow Blue highlights by the exact Red match number.
+    // Repeated Red numbers stay in one group; each corresponding Yellow
+    // value is kept in order, including blank cells as "xxx".
+    for (const match of foundInRed || []) {
+        const redValue = String(match?.val ?? '').trim() || 'xxx';
+        if (!groups.has(redValue)) groups.set(redValue, []);
+    }
+
+    for (const match of foundInYellow || []) {
+        const redValue = String(match?.sourceMatch?.val ?? '').trim() || 'xxx';
+        if (!groups.has(redValue)) groups.set(redValue, []);
+
+        const yellowValue = String(match?.val ?? '').trim() || 'xxx';
+        groups.get(redValue).push(yellowValue);
+    }
+
+    if (groups.size === 0) {
+        container.innerHTML =
+            '<div class="yellow-summary-empty">No Blue-highlight result yet.</div>';
+        return;
+    }
+
+    let html = '<div class="yellow-summary-title">Summary</div>';
+
+    for (const [redValue, yellowValues] of groups) {
+        const total = 1 + yellowValues.length;
+        const yellowText = yellowValues.length ? yellowValues.join(', ') : 'xxx';
+
+        html += '<div class="yellow-summary-item">' +
+            '<div><strong>Find Number = ' + redValue + '</strong></div>' +
+            '<div>Yellow Numbers = ' + yellowText + '</div>' +
+            '<div>Total = ' + total + '</div>' +
+            '</div>';
+    }
+
+    container.innerHTML = html;
+}
+
+function clearYellowSummaries() {
+    document.querySelectorAll('.yellow-summary').forEach(container => {
+        container.innerHTML = '';
+    });
+}
+
 
 function getDisplayColCount() {
     return tableHeaders.length - DISPLAY_START_INDEX;
@@ -413,6 +463,8 @@ function runCompare540() {
         });
     }
 
+    renderYellowSummary('yellow540Summary', foundInRed, foundInYellow);
+
     const redList = foundInRed
         .map(m => m.val + '(R' + (m.row + 1) + ',C' + colName(m.col) + ')')
         .join(', ');
@@ -661,6 +713,8 @@ function runCompare560() {
         });
     }
 
+    renderYellowSummary('yellow560Summary', foundInRed, foundInYellow);
+
     const redList = foundInRed
         .map(m => m.val + '(R' + (m.row + 1) + ',C' + getHeaderDisplayName(m.col) + ')')
         .join(', ');
@@ -897,6 +951,8 @@ function runCompare907() {
         });
     }
 
+    renderYellowSummary('yellow907Summary', foundInRed, foundInYellow);
+
     const redList = foundInRed
         .map(m => m.val + '(R' + (m.row + 1) + ',C' + getHeaderDisplayName(m.col) + ')')
         .join(', ');
@@ -1130,6 +1186,8 @@ function runCompare853() {
             table: 'yellow853'
         });
     }
+
+    renderYellowSummary('yellow853Summary', foundInRed, foundInYellow);
 
     const redList = foundInRed
         .map(m => m.val + '(R' + (m.row + 1) + ',C' + getHeaderDisplayName(m.col) + ')')
@@ -1367,6 +1425,8 @@ function runCompare500() {
             table: 'yellow500'
         });
     }
+
+    renderYellowSummary('yellow500Summary', foundInRed, foundInYellow);
 
     const redList = foundInRed
         .map(m => m.val + '(R' + (m.row + 1) + ',C' + getHeaderDisplayName(m.col) + ')')
@@ -1606,6 +1666,8 @@ function runCompare268() {
         });
     }
 
+    renderYellowSummary('yellow268Summary', foundInRed, foundInYellow);
+
     const redList = foundInRed
         .map(m => m.val + '(R' + (m.row + 1) + ',C' + getHeaderDisplayName(m.col) + ')')
         .join(', ');
@@ -1843,6 +1905,8 @@ function runCompare460() {
         });
     }
 
+    renderYellowSummary('yellow460Summary', foundInRed, foundInYellow);
+
     const redList = foundInRed
         .map(m => m.val + '(R' + (m.row + 1) + ',C' + getHeaderDisplayName(m.col) + ')')
         .join(', ');
@@ -2079,6 +2143,8 @@ function runCompare370() {
         });
     }
 
+    renderYellowSummary('yellow370Summary', foundInRed, foundInYellow);
+
     const redList = foundInRed
         .map(m => m.val + '(R' + (m.row + 1) + ',C' + getHeaderDisplayName(m.col) + ')')
         .join(', ');
@@ -2136,6 +2202,7 @@ function runCompare() {
     // otherwise the newly applied Blue highlights would be erased.
     renderAll();
     clearBlueHighlights();
+    clearYellowSummaries();
     const noteSection = document.getElementById('noteSection');
     runCompare540();
     const note540 = noteSection.innerHTML;
