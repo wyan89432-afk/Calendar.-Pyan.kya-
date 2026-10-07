@@ -158,48 +158,30 @@ function markBlueCell(cell) {
     cell.style.setProperty('border', '2px solid #0044cc', 'important');
 }
 
-function renderYellowSummary(summaryId, foundInRed, foundInYellow) {
+function renderYellowSummary(summaryId, findNumber, foundInYellow) {
     const container = document.getElementById(summaryId);
     if (!container) return;
 
-    const groups = new Map();
+    const yellowValues = (foundInYellow || [])
+        .map(match => String(match?.val ?? '').trim() || 'xxx');
 
-    // Group Yellow Blue highlights by the exact Red match number.
-    // Repeated Red numbers stay in one group; each corresponding Yellow
-    // value is kept in order, including blank cells as "xxx".
-    for (const match of foundInRed || []) {
-        const redValue = String(match?.val ?? '').trim() || 'xxx';
-        if (!groups.has(redValue)) groups.set(redValue, []);
-    }
-
-    for (const match of foundInYellow || []) {
-        const redValue = String(match?.sourceMatch?.val ?? '').trim() || 'xxx';
-        if (!groups.has(redValue)) groups.set(redValue, []);
-
-        const yellowValue = String(match?.val ?? '').trim() || 'xxx';
-        groups.get(redValue).push(yellowValue);
-    }
-
-    if (groups.size === 0) {
+    if (!String(findNumber ?? '').trim() || yellowValues.length === 0) {
         container.innerHTML =
             '<div class="yellow-summary-empty">No Blue-highlight result yet.</div>';
         return;
     }
 
-    let html = '<div class="yellow-summary-title">Summary</div>';
+    // One Find Number represents the complete Red permutation set.
+    // All corresponding Yellow Blue-highlight values are listed together.
+    const total = 1 + yellowValues.length;
 
-    for (const [redValue, yellowValues] of groups) {
-        const total = 1 + yellowValues.length;
-        const yellowText = yellowValues.length ? yellowValues.join(', ') : 'xxx';
-
-        html += '<div class="yellow-summary-item">' +
-            '<div><strong>Find Number = ' + redValue + '</strong></div>' +
-            '<div>Yellow Numbers = ' + yellowText + '</div>' +
-            '<div>Total = ' + total + '</div>' +
-            '</div>';
-    }
-
-    container.innerHTML = html;
+    container.innerHTML =
+        '<div class="yellow-summary-title">Summary</div>' +
+        '<div class="yellow-summary-item">' +
+        '<div><strong>Find Number = ' + String(findNumber).trim() + '</strong></div>' +
+        '<div>Yellow Numbers = ' + yellowValues.join(', ') + '</div>' +
+        '<div>Total = ' + total + '</div>' +
+        '</div>';
 }
 
 function clearYellowSummaries() {
@@ -463,7 +445,7 @@ function runCompare540() {
         });
     }
 
-    renderYellowSummary('yellow540Summary', foundInRed, foundInYellow);
+    renderYellowSummary('yellow540Summary', sourceVal, foundInYellow);
 
     const redList = foundInRed
         .map(m => m.val + '(R' + (m.row + 1) + ',C' + colName(m.col) + ')')
@@ -713,7 +695,7 @@ function runCompare560() {
         });
     }
 
-    renderYellowSummary('yellow560Summary', foundInRed, foundInYellow);
+    renderYellowSummary('yellow560Summary', sourceVal, foundInYellow);
 
     const redList = foundInRed
         .map(m => m.val + '(R' + (m.row + 1) + ',C' + getHeaderDisplayName(m.col) + ')')
@@ -951,7 +933,7 @@ function runCompare907() {
         });
     }
 
-    renderYellowSummary('yellow907Summary', foundInRed, foundInYellow);
+    renderYellowSummary('yellow907Summary', sourceVal, foundInYellow);
 
     const redList = foundInRed
         .map(m => m.val + '(R' + (m.row + 1) + ',C' + getHeaderDisplayName(m.col) + ')')
@@ -1187,7 +1169,7 @@ function runCompare853() {
         });
     }
 
-    renderYellowSummary('yellow853Summary', foundInRed, foundInYellow);
+    renderYellowSummary('yellow853Summary', sourceVal, foundInYellow);
 
     const redList = foundInRed
         .map(m => m.val + '(R' + (m.row + 1) + ',C' + getHeaderDisplayName(m.col) + ')')
@@ -1426,7 +1408,7 @@ function runCompare500() {
         });
     }
 
-    renderYellowSummary('yellow500Summary', foundInRed, foundInYellow);
+    renderYellowSummary('yellow500Summary', sourceVal, foundInYellow);
 
     const redList = foundInRed
         .map(m => m.val + '(R' + (m.row + 1) + ',C' + getHeaderDisplayName(m.col) + ')')
@@ -1666,7 +1648,7 @@ function runCompare268() {
         });
     }
 
-    renderYellowSummary('yellow268Summary', foundInRed, foundInYellow);
+    renderYellowSummary('yellow268Summary', sourceVal, foundInYellow);
 
     const redList = foundInRed
         .map(m => m.val + '(R' + (m.row + 1) + ',C' + getHeaderDisplayName(m.col) + ')')
@@ -1905,7 +1887,7 @@ function runCompare460() {
         });
     }
 
-    renderYellowSummary('yellow460Summary', foundInRed, foundInYellow);
+    renderYellowSummary('yellow460Summary', sourceVal, foundInYellow);
 
     const redList = foundInRed
         .map(m => m.val + '(R' + (m.row + 1) + ',C' + getHeaderDisplayName(m.col) + ')')
@@ -2143,7 +2125,7 @@ function runCompare370() {
         });
     }
 
-    renderYellowSummary('yellow370Summary', foundInRed, foundInYellow);
+    renderYellowSummary('yellow370Summary', sourceVal, foundInYellow);
 
     const redList = foundInRed
         .map(m => m.val + '(R' + (m.row + 1) + ',C' + getHeaderDisplayName(m.col) + ')')
