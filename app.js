@@ -120,6 +120,8 @@ function renderAll() {
     render907YellowTable();
     render853RedTable();
     render853YellowTable();
+    render500RedTable();
+    render500YellowTable();
 }
 
 function clearBlueHighlights() {
@@ -137,7 +139,9 @@ function clearBlueHighlights() {
         '#red907Table td.match-found, #red907Table td.compare-source,' +
         '#yellow907Table td.match-found, #yellow907Table td.compare-source,' +
         '#red853Table td.match-found, #red853Table td.compare-source,' +
-        '#yellow853Table td.match-found, #yellow853Table td.compare-source'
+        '#yellow853Table td.match-found, #yellow853Table td.compare-source,' +
+        '#red500Table td.match-found, #red500Table td.compare-source,' +
+        '#yellow500Table td.match-found, #yellow500Table td.compare-source'
     ).forEach(cell => {
         cell.classList.remove('match-found', 'compare-source');
         cell.style.backgroundColor = '';
@@ -231,6 +235,8 @@ function onCellEdit(input) {
     render907YellowTable();
     render853RedTable();
     render853YellowTable();
+    render500RedTable();
+    render500YellowTable();
 }
 
 // ============ GREEN/RED TABLE (Col 00 to Last) ============
@@ -1178,6 +1184,244 @@ function drawArrows853(pairs) {
 
 
 
+// ============ 500 TABLES ============
+const GAP_500_BETWEEN = 235; // 235 cells are between the two positions
+const GAP_500_OFFSET = GAP_500_BETWEEN + 1; // position-to-position distance = 236
+const RED_500_START_HEADER = '93';
+const YELLOW_500_START_HEADER = '03';
+
+function render500RedTable() {
+    const table = document.getElementById('red500Table');
+    if (!table) return;
+
+    const startCol = getHeaderIndex(RED_500_START_HEADER);
+    const endCol = getLastUpdatedColumn(startCol, tableHeaders.length - 1);
+
+    if (startCol < 0 || endCol < startCol) {
+        table.innerHTML = '';
+        return;
+    }
+
+    let html = '<thead><tr><th>No</th>';
+    for (let c = startCol; c <= endCol; c++) {
+        html += '<th>' + getHeaderDisplayName(c) + '</th>';
+    }
+    html += '</tr></thead><tbody>';
+
+    for (let r = 0; r < ROWS; r++) {
+        html += '<tr><td class="row-num">' + (r + 1) + '</td>';
+        for (let c = startCol; c <= endCol; c++) {
+            const val = tableData[r]?.[c] || '';
+            const isEmpty = val.trim() === '';
+            html += '<td id="red500-r' + r + '-c' + c + '" class="' +
+                (isEmpty ? 'xxx-cell' : '') + '">' +
+                (isEmpty ? 'xxx' : val) + '</td>';
+        }
+        html += '</tr>';
+    }
+
+    html += '</tbody>';
+    table.innerHTML = html;
+}
+
+function render500YellowTable() {
+    const table = document.getElementById('yellow500Table');
+    if (!table) return;
+
+    const startCol = getHeaderIndex(YELLOW_500_START_HEADER);
+    const endCol = getLastUpdatedColumn(startCol, tableHeaders.length - 1);
+
+    if (startCol < 0 || endCol < startCol) {
+        table.innerHTML = '';
+        return;
+    }
+
+    let html = '<thead><tr><th>No</th>';
+    for (let c = startCol; c <= endCol; c++) {
+        html += '<th>' + getHeaderDisplayName(c) + '</th>';
+    }
+    html += '</tr></thead><tbody>';
+
+    for (let r = 0; r < ROWS; r++) {
+        html += '<tr><td class="row-num">' + (r + 1) + '</td>';
+        for (let c = startCol; c <= endCol; c++) {
+            const val = tableData[r]?.[c] || '';
+            const isEmpty = val.trim() === '';
+            html += '<td id="yellow500-r' + r + '-c' + c + '" class="' +
+                (isEmpty ? 'xxx-cell' : '') + '">' +
+                (isEmpty ? 'xxx' : val) + '</td>';
+        }
+        html += '</tr>';
+    }
+
+    html += '</tbody>';
+    table.innerHTML = html;
+}
+
+function runCompare500() {
+
+    const redStart = getHeaderIndex(RED_500_START_HEADER);
+    const yellowStart = getHeaderIndex(YELLOW_500_START_HEADER);
+    const overallEnd = getLastUpdatedColumn(Math.min(redStart, yellowStart), tableHeaders.length - 1);
+
+    if (redStart < 0 || yellowStart < 0 || overallEnd < redStart || ROWS <= 0) {
+        return '<div class="note-item">500 data မရှိပါ။</div>';
+    }
+
+    const lastUpdatedCol = overallEnd;
+    let anchorRow = -1;
+
+    for (let r = ROWS - 1; r >= 0; r--) {
+        const value = tableData[r]?.[lastUpdatedCol];
+        if (typeof value === 'string' && value.trim() !== '') {
+            anchorRow = r;
+            break;
+        }
+    }
+
+    if (anchorRow < 0) {
+        return '<div class="note-item">500 last updated column မှ number မရှိပါ။</div>';
+    }
+
+    // 235 cells are between Red source and Yellow calculated position.
+    const anchorLinear = toLinear560(lastUpdatedCol, anchorRow, redStart);
+    const sourceLinear = anchorLinear - GAP_500_OFFSET;
+    const sourcePos = fromLinear560(sourceLinear, redStart, lastUpdatedCol);
+
+    if (!sourcePos || sourcePos.col < redStart) {
+        return '<div class="note-item">500 gap 235 အတွက် Red source position မရှိပါ။</div>';
+    }
+
+    const sourceVal = tableData[sourcePos.row]?.[sourcePos.col] || '';
+    if (!sourceVal.trim()) {
+        return '<div class="note-item">500 gap 235 source number မရှိပါ။</div>';
+    }
+
+    const sourceCell = document.getElementById(
+        'red500-r' + sourcePos.row + '-c' + sourcePos.col
+    );
+    if (sourceCell) markBlueCell(sourceCell);
+
+    const perms = getPermutations(sourceVal);
+    const foundInRed = [];
+
+    // Search only in 500 Red: 93 -> last updated column, backward from source.
+    for (let searchLinear = sourceLinear - 1; searchLinear >= 0; searchLinear--) {
+        const pos = fromLinear560(searchLinear, redStart, lastUpdatedCol);
+        if (!pos || pos.col < redStart) continue;
+
+        const cellVal = tableData[pos.row]?.[pos.col] || '';
+        if (cellVal && perms.includes(cellVal)) {
+            foundInRed.push({
+                col: pos.col,
+                row: pos.row,
+                val: cellVal,
+                linear: searchLinear
+            });
+
+            const cell = document.getElementById(
+                'red500-r' + pos.row + '-c' + pos.col
+            );
+            if (cell) markBlueCell(cell);
+        }
+    }
+
+    const foundInYellow = [];
+    const arrowPairs = [];
+
+    for (const match of foundInRed) {
+        const yellowLinear = match.linear + GAP_500_OFFSET;
+        const yPos = fromLinear560(yellowLinear, redStart, lastUpdatedCol);
+        if (!yPos || yPos.col < yellowStart) continue;
+
+        // Yellow is position-only; its number does not need to match Red.
+        const yVal = tableData[yPos.row]?.[yPos.col] || '';
+        const yCell = document.getElementById(
+            'yellow500-r' + yPos.row + '-c' + yPos.col
+        );
+
+        if (yCell) markBlueCell(yCell);
+
+        foundInYellow.push({
+            col: yPos.col,
+            row: yPos.row,
+            val: yVal,
+            sourceMatch: match
+        });
+
+        // Blue line inside the 500 Red table.
+        arrowPairs.push({
+            fromRow: sourcePos.row,
+            fromCol: sourcePos.col,
+            toRow: match.row,
+            toCol: match.col,
+            table: 'red500'
+        });
+
+        // Blue line inside the 500 Yellow table.
+        arrowPairs.push({
+            fromRow: anchorRow,
+            fromCol: lastUpdatedCol,
+            toRow: yPos.row,
+            toCol: yPos.col,
+            table: 'yellow500'
+        });
+    }
+
+    const redList = foundInRed
+        .map(m => m.val + '(R' + (m.row + 1) + ',C' + getHeaderDisplayName(m.col) + ')')
+        .join(', ');
+
+    const yellowList = foundInYellow
+        .map(m => (m.val || 'blank') + '(R' + (m.row + 1) + ',C' + getHeaderDisplayName(m.col) + ')')
+        .join(', ');
+
+    if (foundInRed.length === 0) {
+        return '<div class="note-item">500: Gap 235 အရ Red table မှာ permutation match မတွေ့ပါ။</div>';
+    }
+
+    drawArrows500(arrowPairs);
+
+    const matchClass = foundInRed.length >= 3 ? 'match-3plus' : '';
+    return '<div class="note-item ' + matchClass + '">' +
+        '500 Last: C' + getHeaderDisplayName(lastUpdatedCol) + ' R' + (anchorRow + 1) +
+        ' = ' + (tableData[anchorRow][lastUpdatedCol] || '') +
+        ' | Gap: ' + GAP_500_BETWEEN +
+        ' | Red Source: C' + getHeaderDisplayName(sourcePos.col) + ' R' + (sourcePos.row + 1) +
+        ' = ' + sourceVal +
+        ' | Perms: [' + perms.join(',') + ']' +
+        ' | Found(' + foundInRed.length + '): ' + redList +
+        ' | Yellow(Position only): ' + yellowList +
+        '</div>';
+}
+
+function drawArrows500(pairs) {
+    const redSvg = document.getElementById('red500Svg');
+    const yellowSvg = document.getElementById('yellow500Svg');
+    if (!redSvg || !yellowSvg) return;
+
+    redSvg.innerHTML = '';
+    yellowSvg.innerHTML = '';
+    redSvg.style.width = '100%';
+    redSvg.style.height = '100%';
+    yellowSvg.style.width = '100%';
+    yellowSvg.style.height = '100%';
+
+    addArrowDefs(redSvg);
+    addArrowDefs(yellowSvg);
+
+    for (const pair of pairs) {
+        if (pair.table === 'red500') {
+            drawOneArrow('red500', redSvg, pair.fromRow, pair.fromCol, pair.toRow, pair.toCol);
+        } else if (pair.table === 'yellow500') {
+            drawOneArrow('yellow500', yellowSvg, pair.fromRow, pair.fromCol, pair.toRow, pair.toCol);
+        }
+    }
+}
+
+
+
+
 // ============ 268 TABLES ============
 const GAP_268_BETWEEN = 431; // 431 cells are between the two positions
 const GAP_268_OFFSET = GAP_268_BETWEEN + 1; // position-to-position distance = 432
@@ -1901,6 +2145,7 @@ function runCompare() {
     const result268 = runCompare268();
     const result907 = runCompare907();
     const result853 = runCompare853();
+    const result500 = runCompare500();
 
     // Keep all comparison results together in the Notes section.
     noteSection.innerHTML =
@@ -1924,6 +2169,9 @@ function runCompare() {
         '</div>' +
         '<div class="compare-group"><div class="compare-group-title">853 Compare Result</div>' +
         result853 +
+        '</div>' +
+        '<div class="compare-group"><div class="compare-group-title">500 Compare Result</div>' +
+        result500 +
         '</div>';
 }
 
