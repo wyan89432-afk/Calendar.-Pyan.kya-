@@ -269,8 +269,6 @@ function renderYellowTable() {
 
 // ============ COMPARE LOGIC ============
 function runCompare540() {
-    renderGreenTable();
-    renderYellowTable();
 
     const totalCols = getDisplayColCount();
     if (totalCols <= 0 || ROWS <= 0) {
@@ -539,8 +537,6 @@ function render560YellowTable() {
 }
 
 function runCompare560() {
-    render560RedTable();
-    render560YellowTable();
     const redStart = getHeaderIndex(RED_560_START_HEADER);
     const yellowStart = getHeaderIndex(YELLOW_560_START_HEADER);
     const overallEnd = getLastUpdatedColumn(Math.min(redStart, yellowStart), tableHeaders.length - 1);
@@ -780,8 +776,6 @@ function render907YellowTable() {
 }
 
 function runCompare907() {
-    render907RedTable();
-    render907YellowTable();
 
     const redStart = getHeaderIndex(RED_907_START_HEADER);
     const yellowStart = getHeaderIndex(YELLOW_907_START_HEADER);
@@ -1016,10 +1010,6 @@ function render268YellowTable() {
 }
 
 function runCompare268() {
-    render268RedTable();
-    render268YellowTable();
-    render907RedTable();
-    render907YellowTable();
 
     const redStart = getHeaderIndex(RED_268_START_HEADER);
     const yellowStart = getHeaderIndex(YELLOW_268_START_HEADER);
@@ -1257,12 +1247,6 @@ function render460YellowTable() {
 }
 
 function runCompare460() {
-    render460RedTable();
-    render460YellowTable();
-    render268RedTable();
-    render268YellowTable();
-    render907RedTable();
-    render907YellowTable();
 
     const redStart = getHeaderIndex(RED_460_START_HEADER);
     const yellowStart = getHeaderIndex(YELLOW_460_START_HEADER);
@@ -1499,14 +1483,6 @@ function render370YellowTable() {
 }
 
 function runCompare370() {
-    render370RedTable();
-    render370YellowTable();
-    render460RedTable();
-    render460YellowTable();
-    render268RedTable();
-    render268YellowTable();
-    render907RedTable();
-    render907YellowTable();
 
     const redStart = getHeaderIndex(RED_370_START_HEADER);
     const yellowStart = getHeaderIndex(YELLOW_370_START_HEADER);
@@ -1668,6 +1644,10 @@ function drawArrows370(pairs) {
 }
 
 function runCompare() {
+    // Render every comparison table once before calculating.
+    // Individual compare functions must not re-render afterward,
+    // otherwise the newly applied Blue highlights would be erased.
+    renderAll();
     clearBlueHighlights();
     const noteSection = document.getElementById('noteSection');
     runCompare540();
