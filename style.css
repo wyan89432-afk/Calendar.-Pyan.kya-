@@ -352,3 +352,25 @@ h2 {
     font-weight: bold;
     margin-bottom: 4px;
 }
+
+
+/* Reference picture between Fix Table and 540 Red Table.
+   Keep its natural size so the numbers remain sharp and readable. */
+.reference-image-wrapper {
+    width: 100%;
+    overflow-x: auto;
+    overflow-y: hidden;
+    margin: 6px 0 10px;
+    border: 0;
+    background: #fff;
+    text-align: left;
+}
+
+.reference-image {
+    display: block;
+    width: 994px;
+    height: 1536px;
+    max-width: none;
+    object-fit: contain;
+    image-rendering: auto;
+}
