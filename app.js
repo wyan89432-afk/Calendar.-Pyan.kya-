@@ -112,6 +112,8 @@ function renderAll() {
     render560YellowTable();
     render370RedTable();
     render370YellowTable();
+    render460RedTable();
+    render460YellowTable();
 }
 
 function clearBlueHighlights() {
@@ -121,7 +123,9 @@ function clearBlueHighlights() {
         '#red560Table td.match-found, #red560Table td.compare-source,' +
         '#yellow560Table td.match-found, #yellow560Table td.compare-source,' +
         '#red370Table td.match-found, #red370Table td.compare-source,' +
-        '#yellow370Table td.match-found, #yellow370Table td.compare-source'
+        '#yellow370Table td.match-found, #yellow370Table td.compare-source,' +
+        '#red460Table td.match-found, #red460Table td.compare-source,' +
+        '#yellow460Table td.match-found, #yellow460Table td.compare-source'
     ).forEach(cell => {
         cell.classList.remove('match-found', 'compare-source');
         cell.style.backgroundColor = '';
@@ -207,6 +211,8 @@ function onCellEdit(input) {
     render560YellowTable();
     render370RedTable();
     render370YellowTable();
+    render460RedTable();
+    render460YellowTable();
 }
 
 // ============ GREEN/RED TABLE (Col 00 to Last) ============
@@ -687,6 +693,244 @@ function drawArrows560(pairs) {
 }
 
 
+// ============ 460 TABLES ============
+const GAP_460_BETWEEN = 594; // 594 cells are between the two positions
+const GAP_460_OFFSET = GAP_460_BETWEEN + 1; // position-to-position distance = 237
+const RED_460_START_HEADER = '76';
+const YELLOW_460_START_HEADER = '25';
+
+function render460RedTable() {
+    const table = document.getElementById('red460Table');
+    if (!table) return;
+
+    const startCol = getHeaderIndex(RED_460_START_HEADER);
+    const endCol = getLastUpdatedColumn(startCol, tableHeaders.length - 1);
+
+    if (startCol < 0 || endCol < startCol) {
+        table.innerHTML = '';
+        return;
+    }
+
+    let html = '<thead><tr><th>No</th>';
+    for (let c = startCol; c <= endCol; c++) {
+        html += '<th>' + getHeaderDisplayName(c) + '</th>';
+    }
+    html += '</tr></thead><tbody>';
+
+    for (let r = 0; r < ROWS; r++) {
+        html += '<tr><td class="row-num">' + (r + 1) + '</td>';
+        for (let c = startCol; c <= endCol; c++) {
+            const val = tableData[r]?.[c] || '';
+            const isEmpty = val.trim() === '';
+            html += '<td id="red460-r' + r + '-c' + c + '" class="' +
+                (isEmpty ? 'xxx-cell' : '') + '">' +
+                (isEmpty ? 'xxx' : val) + '</td>';
+        }
+        html += '</tr>';
+    }
+
+    html += '</tbody>';
+    table.innerHTML = html;
+}
+
+function render460YellowTable() {
+    const table = document.getElementById('yellow460Table');
+    if (!table) return;
+
+    const startCol = getHeaderIndex(YELLOW_460_START_HEADER);
+    const endCol = getLastUpdatedColumn(startCol, tableHeaders.length - 1);
+
+    if (startCol < 0 || endCol < startCol) {
+        table.innerHTML = '';
+        return;
+    }
+
+    let html = '<thead><tr><th>No</th>';
+    for (let c = startCol; c <= endCol; c++) {
+        html += '<th>' + getHeaderDisplayName(c) + '</th>';
+    }
+    html += '</tr></thead><tbody>';
+
+    for (let r = 0; r < ROWS; r++) {
+        html += '<tr><td class="row-num">' + (r + 1) + '</td>';
+        for (let c = startCol; c <= endCol; c++) {
+            const val = tableData[r]?.[c] || '';
+            const isEmpty = val.trim() === '';
+            html += '<td id="yellow460-r' + r + '-c' + c + '" class="' +
+                (isEmpty ? 'xxx-cell' : '') + '">' +
+                (isEmpty ? 'xxx' : val) + '</td>';
+        }
+        html += '</tr>';
+    }
+
+    html += '</tbody>';
+    table.innerHTML = html;
+}
+
+function runCompare460() {
+    render460RedTable();
+    render460YellowTable();
+
+    const redStart = getHeaderIndex(RED_460_START_HEADER);
+    const yellowStart = getHeaderIndex(YELLOW_460_START_HEADER);
+    const overallEnd = getLastUpdatedColumn(Math.min(redStart, yellowStart), tableHeaders.length - 1);
+
+    if (redStart < 0 || yellowStart < 0 || overallEnd < redStart || ROWS <= 0) {
+        return '<div class="note-item">460 data မရှိပါ။</div>';
+    }
+
+    const lastUpdatedCol = overallEnd;
+    let anchorRow = -1;
+
+    for (let r = ROWS - 1; r >= 0; r--) {
+        const value = tableData[r]?.[lastUpdatedCol];
+        if (typeof value === 'string' && value.trim() !== '') {
+            anchorRow = r;
+            break;
+        }
+    }
+
+    if (anchorRow < 0) {
+        return '<div class="note-item">460 last updated column မှ number မရှိပါ။</div>';
+    }
+
+    // 594 cells are between Red source and Yellow calculated position.
+    const anchorLinear = toLinear560(lastUpdatedCol, anchorRow, redStart);
+    const sourceLinear = anchorLinear - GAP_460_OFFSET;
+    const sourcePos = fromLinear560(sourceLinear, redStart, lastUpdatedCol);
+
+    if (!sourcePos || sourcePos.col < redStart) {
+        return '<div class="note-item">460 gap 594 အတွက် Red source position မရှိပါ။</div>';
+    }
+
+    const sourceVal = tableData[sourcePos.row]?.[sourcePos.col] || '';
+    if (!sourceVal.trim()) {
+        return '<div class="note-item">460 gap 594 source number မရှိပါ။</div>';
+    }
+
+    const sourceCell = document.getElementById(
+        'red460-r' + sourcePos.row + '-c' + sourcePos.col
+    );
+    if (sourceCell) markBlueCell(sourceCell);
+
+    const perms = getPermutations(sourceVal);
+    const foundInRed = [];
+
+    // Search only in 460 Red: 91 -> last updated column, backward from source.
+    for (let searchLinear = sourceLinear - 1; searchLinear >= 0; searchLinear--) {
+        const pos = fromLinear560(searchLinear, redStart, lastUpdatedCol);
+        if (!pos || pos.col < redStart) continue;
+
+        const cellVal = tableData[pos.row]?.[pos.col] || '';
+        if (cellVal && perms.includes(cellVal)) {
+            foundInRed.push({
+                col: pos.col,
+                row: pos.row,
+                val: cellVal,
+                linear: searchLinear
+            });
+
+            const cell = document.getElementById(
+                'red460-r' + pos.row + '-c' + pos.col
+            );
+            if (cell) markBlueCell(cell);
+        }
+    }
+
+    const foundInYellow = [];
+    const arrowPairs = [];
+
+    for (const match of foundInRed) {
+        const yellowLinear = match.linear + GAP_460_OFFSET;
+        const yPos = fromLinear560(yellowLinear, redStart, lastUpdatedCol);
+        if (!yPos || yPos.col < yellowStart) continue;
+
+        // Yellow is position-only; its number does not need to match Red.
+        const yVal = tableData[yPos.row]?.[yPos.col] || '';
+        const yCell = document.getElementById(
+            'yellow460-r' + yPos.row + '-c' + yPos.col
+        );
+
+        if (yCell) markBlueCell(yCell);
+
+        foundInYellow.push({
+            col: yPos.col,
+            row: yPos.row,
+            val: yVal,
+            sourceMatch: match
+        });
+
+        // Blue line inside the 460 Red table.
+        arrowPairs.push({
+            fromRow: sourcePos.row,
+            fromCol: sourcePos.col,
+            toRow: match.row,
+            toCol: match.col,
+            table: 'red460'
+        });
+
+        // Blue line inside the 460 Yellow table.
+        arrowPairs.push({
+            fromRow: anchorRow,
+            fromCol: lastUpdatedCol,
+            toRow: yPos.row,
+            toCol: yPos.col,
+            table: 'yellow460'
+        });
+    }
+
+    const redList = foundInRed
+        .map(m => m.val + '(R' + (m.row + 1) + ',C' + getHeaderDisplayName(m.col) + ')')
+        .join(', ');
+
+    const yellowList = foundInYellow
+        .map(m => (m.val || 'blank') + '(R' + (m.row + 1) + ',C' + getHeaderDisplayName(m.col) + ')')
+        .join(', ');
+
+    if (foundInRed.length === 0) {
+        return '<div class="note-item">460: Gap 594 အရ Red table မှာ permutation match မတွေ့ပါ။</div>';
+    }
+
+    drawArrows460(arrowPairs);
+
+    const matchClass = foundInRed.length >= 3 ? 'match-3plus' : '';
+    return '<div class="note-item ' + matchClass + '">' +
+        '460 Last: C' + getHeaderDisplayName(lastUpdatedCol) + ' R' + (anchorRow + 1) +
+        ' = ' + (tableData[anchorRow][lastUpdatedCol] || '') +
+        ' | Gap: ' + GAP_460_BETWEEN +
+        ' | Red Source: C' + getHeaderDisplayName(sourcePos.col) + ' R' + (sourcePos.row + 1) +
+        ' = ' + sourceVal +
+        ' | Perms: [' + perms.join(',') + ']' +
+        ' | Found(' + foundInRed.length + '): ' + redList +
+        ' | Yellow(Position only): ' + yellowList +
+        '</div>';
+}
+
+function drawArrows460(pairs) {
+    const redSvg = document.getElementById('red460Svg');
+    const yellowSvg = document.getElementById('yellow460Svg');
+    if (!redSvg || !yellowSvg) return;
+
+    redSvg.innerHTML = '';
+    yellowSvg.innerHTML = '';
+    redSvg.style.width = '100%';
+    redSvg.style.height = '100%';
+    yellowSvg.style.width = '100%';
+    yellowSvg.style.height = '100%';
+
+    addArrowDefs(redSvg);
+    addArrowDefs(yellowSvg);
+
+    for (const pair of pairs) {
+        if (pair.table === 'red460') {
+            drawOneArrow('red460', redSvg, pair.fromRow, pair.fromCol, pair.toRow, pair.toCol);
+        } else if (pair.table === 'yellow460') {
+            drawOneArrow('yellow460', yellowSvg, pair.fromRow, pair.fromCol, pair.toRow, pair.toCol);
+        }
+    }
+}
+
+
 // ============ 370 TABLES ============
 const GAP_370_BETWEEN = 236; // 236 cells are between the two positions
 const GAP_370_OFFSET = GAP_370_BETWEEN + 1; // position-to-position distance = 237
@@ -764,6 +1008,8 @@ function render370YellowTable() {
 function runCompare370() {
     render370RedTable();
     render370YellowTable();
+    render460RedTable();
+    render460YellowTable();
 
     const redStart = getHeaderIndex(RED_370_START_HEADER);
     const yellowStart = getHeaderIndex(YELLOW_370_START_HEADER);
@@ -931,6 +1177,7 @@ function runCompare() {
     const note540 = noteSection.innerHTML;
     const result560 = runCompare560();
     const result370 = runCompare370();
+    const result460 = runCompare460();
 
     // Keep 540, 560 and 370 results together in the Notes section.
     noteSection.innerHTML =
@@ -942,6 +1189,9 @@ function runCompare() {
         '</div>' +
         '<div class="compare-group"><div class="compare-group-title">370 Compare Result</div>' +
         result370 +
+        '</div>' +
+        '<div class="compare-group"><div class="compare-group-title">460 Compare Result</div>' +
+        result460 +
         '</div>';
 }
 
