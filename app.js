@@ -697,7 +697,7 @@ function drawArrows560(pairs) {
 const GAP_460_BETWEEN = 594; // 594 cells are between the two positions
 const GAP_460_OFFSET = GAP_460_BETWEEN + 1; // position-to-position distance = 237
 const RED_460_START_HEADER = '76';
-const YELLOW_460_START_HEADER = '25';
+const YELLOW_460_START_HEADER = '11';
 
 function render460RedTable() {
     const table = document.getElementById('red460Table');
