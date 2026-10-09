@@ -2066,18 +2066,23 @@ function runCompare567() {
     const sourcePos = fromLinear560(sourceLinear, redStart, lastUpdatedCol);
 
     if (!sourcePos || sourcePos.col < redStart) {
-        return '<div class="note-item">567 gap 213 အတွက် Red source position မရှိပါ။</div>';
+        return '<div class="note-item">567 gap 190 အတွက် Red source position မရှိပါ။</div>';
     }
 
     const sourceVal = tableData[sourcePos.row]?.[sourcePos.col] || '';
     if (!sourceVal.trim()) {
-        return '<div class="note-item">567 gap 213 source number မရှိပါ။</div>';
+        return '<div class="note-item">567 gap 190 source number မရှိပါ။</div>';
     }
 
     const sourceCell = document.getElementById(
         'red567-r' + sourcePos.row + '-c' + sourcePos.col
     );
     if (sourceCell) markBlueCell(sourceCell);
+
+    const yellowAnchorCell = document.getElementById(
+        'yellow567-r' + anchorRow + '-c' + anchorCol
+    );
+    if (yellowAnchorCell) markBlueCell(yellowAnchorCell);
 
     const perms = getPermutations(sourceVal);
     const foundInRed = [];
@@ -2138,7 +2143,7 @@ function runCompare567() {
         // Blue line inside the 567 Yellow table.
         arrowPairs.push({
             fromRow: anchorRow,
-            fromCol: lastUpdatedCol,
+            fromCol: anchorCol,
             toRow: yPos.row,
             toCol: yPos.col,
             table: 'yellow567'
@@ -2156,15 +2161,15 @@ function runCompare567() {
         .join(', ');
 
     if (foundInRed.length === 0) {
-        return '<div class="note-item">567: Gap 213 အရ Red table မှာ permutation match မတွေ့ပါ။</div>';
+        return '<div class="note-item">567: Gap 190 အရ Red table မှာ permutation match မတွေ့ပါ။</div>';
     }
 
     drawArrows567(arrowPairs);
 
     const matchClass = foundInRed.length >= 3 ? 'match-3plus' : '';
     return '<div class="note-item ' + matchClass + '">' +
-        '567 Last: C' + getHeaderDisplayName(lastUpdatedCol) + ' R' + (anchorRow + 1) +
-        ' = ' + (tableData[anchorRow][lastUpdatedCol] || '') +
+        '567 Yellow Anchor: C' + getHeaderDisplayName(anchorCol) + ' R' + (anchorRow + 1) +
+        ' = ' + (tableData[anchorRow][anchorCol] || '') +
         ' | Gap: ' + GAP_567_BETWEEN +
         ' | Red Source: C' + getHeaderDisplayName(sourcePos.col) + ' R' + (sourcePos.row + 1) +
         ' = ' + sourceVal +
