@@ -3358,7 +3358,7 @@ function runCompare473() {
     }
 
     // Dynamic anchor: the bottom-most populated value in the latest populated column.
-    // Never hard-code the example values (603/063) or their coordinates.
+    // Never hard-code the example values or their coordinates.
     const lastUpdatedCol = overallEnd;
     let anchorRow = -1;
     for (let r = ROWS - 1; r >= 0; r--) {
