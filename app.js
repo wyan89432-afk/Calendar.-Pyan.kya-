@@ -128,6 +128,16 @@ function renderAll() {
     render782YellowTable();
     render567RedTable();
     render567YellowTable();
+    clearComparisonArrows();
+}
+
+function clearComparisonArrows() {
+    // Table rerenders invalidate old connector positions; clear stale paths and reset SVG sizing.
+    document.querySelectorAll('.arrow-svg').forEach(svg => {
+        svg.replaceChildren();
+        svg.style.width = '100%';
+        svg.style.height = '100%';
+    });
 }
 
 function clearBlueHighlights() {
@@ -287,6 +297,7 @@ function onCellEdit(input) {
     render782YellowTable();
     render567RedTable();
     render567YellowTable();
+    clearComparisonArrows();
 }
 
 // ============ GREEN/RED TABLE (Col 00 to Last) ============
@@ -3042,28 +3053,44 @@ function drawOneArrow(prefix, svg, fromRow, fromCol, toRow, toCol) {
     const fromCell = document.getElementById(prefix + '-r' + fromRow + '-c' + fromCol);
     const toCell = document.getElementById(prefix + '-r' + toRow + '-c' + toCol);
     if (!fromCell || !toCell) return;
-    
-    const container = svg.parentElement;
-    const cRect = container.getBoundingClientRect();
-    const fRect = fromCell.getBoundingClientRect();
-    const tRect = toCell.getBoundingClientRect();
-    
-    const x1 = fRect.left + fRect.width / 2 - cRect.left;
-    const y1 = fRect.top + fRect.height / 2 - cRect.top;
-    const x2 = tRect.left + tRect.width / 2 - cRect.left;
-    const y2 = tRect.top + tRect.height / 2 - cRect.top;
-    
+
+    // Convert viewport points into this SVG's own coordinate space.
+    // This stays aligned when the page is scrolled or CSS-zoomed.
+    const screenMatrix = svg.getScreenCTM();
+    if (!screenMatrix) return;
+    let inverseMatrix;
+    try {
+        inverseMatrix = screenMatrix.inverse();
+    } catch (e) {
+        return;
+    }
+
+    const cellCenterInSvg = cell => {
+        const rect = cell.getBoundingClientRect();
+        const point = svg.createSVGPoint();
+        point.x = rect.left + rect.width / 2;
+        point.y = rect.top + rect.height / 2;
+        return point.matrixTransform(inverseMatrix);
+    };
+
+    const fromPoint = cellCenterInSvg(fromCell);
+    const toPoint = cellCenterInSvg(toCell);
+    const x1 = fromPoint.x;
+    const y1 = fromPoint.y;
+    const x2 = toPoint.x;
+    const y2 = toPoint.y;
+
     const dx = x2 - x1;
     const dy = y2 - y1;
     const dist = Math.sqrt(dx * dx + dy * dy);
     if (dist === 0) return;
-    
+
     const curveOff = Math.min(dist * 0.25, 40);
     const nx = -dy / dist * curveOff;
     const ny = dx / dist * curveOff;
     const cx = (x1 + x2) / 2 + nx;
     const cy = (y1 + y2) / 2 + ny;
-    
+
     const ns = 'http://www.w3.org/2000/svg';
     const path = document.createElementNS(ns, 'path');
     path.setAttribute('d', 'M ' + x1 + ' ' + y1 + ' Q ' + cx + ' ' + cy + ' ' + x2 + ' ' + y2);
@@ -3073,11 +3100,13 @@ function drawOneArrow(prefix, svg, fromRow, fromCol, toRow, toCol) {
     path.setAttribute('stroke-opacity', '0.7');
     path.setAttribute('marker-end', 'url(#ah-' + svg.id + ')');
     svg.appendChild(path);
-    
+
     const maxW = Math.max(x1, x2, cx) + 20;
     const maxH = Math.max(y1, y2, cy) + 20;
-    svg.style.width = Math.max(parseFloat(svg.style.width) || 0, maxW) + 'px';
-    svg.style.height = Math.max(parseFloat(svg.style.height) || 0, maxH) + 'px';
+    const currentWidth = svg.style.width.endsWith('%') ? 0 : (parseFloat(svg.style.width) || 0);
+    const currentHeight = svg.style.height.endsWith('%') ? 0 : (parseFloat(svg.style.height) || 0);
+    svg.style.width = Math.max(currentWidth, maxW) + 'px';
+    svg.style.height = Math.max(currentHeight, maxH) + 'px';
 }
 
 // ============ ZOOM ============
