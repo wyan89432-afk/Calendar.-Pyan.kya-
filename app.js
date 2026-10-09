@@ -2050,16 +2050,23 @@ function runCompare567() {
     }
 
     const lastUpdatedCol = overallEnd;
-    // Yellow anchor from Fix Table: C22, Row 21 = 789.
-    const anchorCol = getHeaderIndex('22');
-    const anchorRow = 20;
-
-    if (anchorCol < yellowStart || anchorCol > lastUpdatedCol ||
-        !String(tableData[anchorRow]?.[anchorCol] || '').trim()) {
-        return '<div class="note-item">567 Yellow anchor C22 R21 မှ number မရှိပါ။</div>';
+    // Dynamic anchor: use the last non-empty number in the Last Updated column.
+    // Do not hard-code example values or row/column coordinates.
+    let anchorRow = -1;
+    for (let r = ROWS - 1; r >= 0; r--) {
+        const value = tableData[r]?.[lastUpdatedCol];
+        if (typeof value === 'string' && value.trim() !== '') {
+            anchorRow = r;
+            break;
+        }
     }
 
-    // 190 cells lie between Red C14 R22 (449) and Yellow C22 R21 (789).
+    if (anchorRow < 0 || lastUpdatedCol < yellowStart) {
+        return '<div class="note-item">567 Last Updated column မှ anchor number မရှိပါ။</div>';
+    }
+
+    const anchorCol = lastUpdatedCol;
+    // Move backward from the dynamic Last Updated cell by 190 intervening cells.
     // Position-to-position distance = 191 cells.
     const anchorLinear = toLinear560(anchorCol, anchorRow, redStart);
     const sourceLinear = anchorLinear - GAP_567_OFFSET;
@@ -2168,7 +2175,7 @@ function runCompare567() {
 
     const matchClass = foundInRed.length >= 3 ? 'match-3plus' : '';
     return '<div class="note-item ' + matchClass + '">' +
-        '567 Yellow Anchor: C' + getHeaderDisplayName(anchorCol) + ' R' + (anchorRow + 1) +
+        '567 Last Updated Anchor: C' + getHeaderDisplayName(anchorCol) + ' R' + (anchorRow + 1) +
         ' = ' + (tableData[anchorRow][anchorCol] || '') +
         ' | Gap: ' + GAP_567_BETWEEN +
         ' | Red Source: C' + getHeaderDisplayName(sourcePos.col) + ' R' + (sourcePos.row + 1) +
