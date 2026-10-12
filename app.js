@@ -134,6 +134,8 @@ function renderAll() {
     render473YellowTable();
     render234RedTable();
     render234YellowTable();
+    render370Gap169RedTable();
+    render370Gap169YellowTable();
     clearComparisonArrows();
 }
 
@@ -175,7 +177,9 @@ function clearBlueHighlights() {
         '#red473Table td.match-found, #red473Table td.compare-source,' +
         '#yellow473Table td.match-found, #yellow473Table td.compare-source,' +
         '#red234Table td.match-found, #red234Table td.compare-source,' +
-        '#yellow234Table td.match-found, #yellow234Table td.compare-source'
+        '#yellow234Table td.match-found, #yellow234Table td.compare-source,' +
+        '#red370Gap169Table td.match-found, #red370Gap169Table td.compare-source,' +
+        '#yellow370Gap169Table td.match-found, #yellow370Gap169Table td.compare-source'
     ).forEach(cell => {
         cell.classList.remove('match-found', 'compare-source');
         cell.style.backgroundColor = '';
@@ -315,6 +319,8 @@ function onCellEdit(input) {
     render473YellowTable();
     render234RedTable();
     render234YellowTable();
+    render370Gap169RedTable();
+    render370Gap169YellowTable();
     clearComparisonArrows();
 }
 
@@ -2981,6 +2987,7 @@ function runCompare() {
     const result342 = runCompare342();
     const result473 = runCompare473();
     const result234 = runCompare234();
+    const result370Gap169 = runCompare370Gap169();
 
     // Keep all comparison results together in the Notes section.
     noteSection.innerHTML =
@@ -3025,6 +3032,9 @@ function runCompare() {
         '</div>' +
         '<div class="compare-group"><div class="compare-group-title">234 Compare Result</div>' +
         result234 +
+        '</div>' +
+        '<div class="compare-group"><div class="compare-group-title">370 Gap 169 Compare Result</div>' +
+        result370Gap169 +
         '</div>';
 }
 
@@ -3752,6 +3762,240 @@ function drawArrows234(pairs) {
             drawOneArrow('red234', redSvg, pair.fromRow, pair.fromCol, pair.toRow, pair.toCol);
         } else if (pair.table === 'yellow234') {
             drawOneArrow('yellow234', yellowSvg, pair.fromRow, pair.fromCol, pair.toRow, pair.toCol);
+        }
+    }
+}
+
+
+const GAP_370_GAP169_BETWEEN = 169;
+const GAP_370_GAP169_OFFSET = GAP_370_GAP169_BETWEEN + 1;
+const RED_370_GAP169_START_HEADER = '10';
+const YELLOW_370_GAP169_START_HEADER = '15';
+
+function render370Gap169RedTable() {
+    const table = document.getElementById('red370Gap169Table');
+    if (!table) return;
+
+    const startCol = getHeaderIndex(RED_370_GAP169_START_HEADER);
+    const endCol = getLastUpdatedColumn(startCol, tableHeaders.length - 1);
+    if (startCol < 0 || endCol < startCol) {
+        table.innerHTML = '';
+        return;
+    }
+
+    let html = '<thead><tr><th>No</th>';
+    for (let c = startCol; c <= endCol; c++) {
+        html += '<th>' + getHeaderDisplayName(c) + '</th>';
+    }
+    html += '</tr></thead><tbody>';
+
+    for (let r = 0; r < ROWS; r++) {
+        html += '<tr><td class="row-num">' + (r + 1) + '</td>';
+        for (let c = startCol; c <= endCol; c++) {
+            const val = tableData[r]?.[c] || '';
+            const isEmpty = val.trim() === '';
+            html += '<td id="red370Gap169-r' + r + '-c' + c + '" class="' +
+                (isEmpty ? 'xxx-cell' : '') + '">' +
+                (isEmpty ? 'xxx' : val) + '</td>';
+        }
+        html += '</tr>';
+    }
+
+    html += '</tbody>';
+    table.innerHTML = html;
+}
+
+function render370Gap169YellowTable() {
+    const table = document.getElementById('yellow370Gap169Table');
+    if (!table) return;
+
+    const startCol = getHeaderIndex(YELLOW_370_GAP169_START_HEADER);
+    const endCol = getLastUpdatedColumn(startCol, tableHeaders.length - 1);
+    if (startCol < 0 || endCol < startCol) {
+        table.innerHTML = '';
+        return;
+    }
+
+    let html = '<thead><tr><th>No</th>';
+    for (let c = startCol; c <= endCol; c++) {
+        html += '<th>' + getHeaderDisplayName(c) + '</th>';
+    }
+    html += '</tr></thead><tbody>';
+
+    for (let r = 0; r < ROWS; r++) {
+        html += '<tr><td class="row-num">' + (r + 1) + '</td>';
+        for (let c = startCol; c <= endCol; c++) {
+            const val = tableData[r]?.[c] || '';
+            const isEmpty = val.trim() === '';
+            html += '<td id="yellow370Gap169-r' + r + '-c' + c + '" class="' +
+                (isEmpty ? 'xxx-cell' : '') + '">' +
+                (isEmpty ? 'xxx' : val) + '</td>';
+        }
+        html += '</tr>';
+    }
+
+    html += '</tbody>';
+    table.innerHTML = html;
+}
+
+function runCompare370Gap169() {
+    const redStart = getHeaderIndex(RED_370_GAP169_START_HEADER);
+    const yellowStart = getHeaderIndex(YELLOW_370_GAP169_START_HEADER);
+    const overallEnd = getLastUpdatedColumn(
+        Math.min(redStart, yellowStart),
+        tableHeaders.length - 1
+    );
+
+    if (redStart < 0 || yellowStart < 0 || overallEnd < redStart || ROWS <= 0) {
+        return '<div class="note-item">370Gap169 data မရှိပါ။</div>';
+    }
+
+    // Follow the 460-style dynamic anchor. The sample values 037 and 073
+    // are explanatory only; anchor column/row are always detected from Fix Table.
+    const lastUpdatedCol = overallEnd;
+    let anchorRow = -1;
+    for (let r = ROWS - 1; r >= 0; r--) {
+        const value = tableData[r]?.[lastUpdatedCol];
+        if (typeof value === 'string' && value.trim() !== '') {
+            anchorRow = r;
+            break;
+        }
+    }
+
+    if (anchorRow < 0) {
+        return '<div class="note-item">370Gap169 Last Updated column မှ number မရှိပါ။</div>';
+    }
+
+    // Step backward by 169 intervening cells (170 position indexes).
+    const anchorLinear = toLinear560(lastUpdatedCol, anchorRow, redStart);
+    const sourceLinear = anchorLinear - GAP_370_GAP169_OFFSET;
+    const sourcePos = fromLinear560(sourceLinear, redStart, lastUpdatedCol);
+
+    if (!sourcePos || sourcePos.col < redStart) {
+        return '<div class="note-item">370Gap169 gap 169 အတွက် Red source position မရှိပါ။</div>';
+    }
+
+    const sourceVal = tableData[sourcePos.row]?.[sourcePos.col] || '';
+    if (!sourceVal.trim()) {
+        return '<div class="note-item">370Gap169 gap 169 source number မရှိပါ။</div>';
+    }
+
+    const sourceCell = document.getElementById(
+        'red370Gap169-r' + sourcePos.row + '-c' + sourcePos.col
+    );
+    if (sourceCell) markBlueCell(sourceCell);
+
+    const perms = getPermutations(sourceVal);
+    const foundInRed = [];
+
+    // Search permutation matches in Red's 10 -> Last Updated range.
+    for (let searchLinear = sourceLinear - 1; searchLinear >= 0; searchLinear--) {
+        const pos = fromLinear560(searchLinear, redStart, lastUpdatedCol);
+        if (!pos || pos.col < redStart) continue;
+
+        const cellVal = tableData[pos.row]?.[pos.col] || '';
+        if (cellVal && perms.includes(cellVal)) {
+            foundInRed.push({
+                col: pos.col,
+                row: pos.row,
+                val: cellVal,
+                linear: searchLinear
+            });
+
+            const cell = document.getElementById(
+                'red370Gap169-r' + pos.row + '-c' + pos.col
+            );
+            if (cell) markBlueCell(cell);
+        }
+    }
+
+    const foundInYellow = [];
+    const arrowPairs = [];
+
+    for (const match of foundInRed) {
+        // Map each Red match into Yellow by position only: no Yellow number comparison.
+        const yellowLinear = match.linear + GAP_370_GAP169_OFFSET;
+        const yPos = fromLinear560(yellowLinear, redStart, lastUpdatedCol);
+        if (!yPos || yPos.col < yellowStart) continue;
+
+        const yVal = tableData[yPos.row]?.[yPos.col] || '';
+        const yCell = document.getElementById(
+            'yellow370Gap169-r' + yPos.row + '-c' + yPos.col
+        );
+        if (yCell) markBlueCell(yCell);
+
+        foundInYellow.push({
+            col: yPos.col,
+            row: yPos.row,
+            val: yVal,
+            sourceMatch: match
+        });
+
+        arrowPairs.push({
+            fromRow: sourcePos.row,
+            fromCol: sourcePos.col,
+            toRow: match.row,
+            toCol: match.col,
+            table: 'red370Gap169'
+        });
+        arrowPairs.push({
+            fromRow: anchorRow,
+            fromCol: lastUpdatedCol,
+            toRow: yPos.row,
+            toCol: yPos.col,
+            table: 'yellow370Gap169'
+        });
+    }
+
+    renderYellowSummary('yellow370Gap169Summary', sourceVal, foundInYellow);
+
+    const redList = foundInRed
+        .map(m => m.val + '(R' + (m.row + 1) + ',C' + getHeaderDisplayName(m.col) + ')')
+        .join(', ');
+
+    const yellowList = foundInYellow
+        .map(m => (m.val || 'blank') + '(R' + (m.row + 1) + ',C' + getHeaderDisplayName(m.col) + ')')
+        .join(', ');
+
+    if (foundInRed.length === 0) {
+        return '<div class="note-item">370Gap169: Gap 169 အရ Red table မှာ permutation match မတွေ့ပါ။</div>';
+    }
+
+    drawArrows370Gap169(arrowPairs);
+
+    const matchClass = foundInRed.length >= 3 ? 'match-3plus' : '';
+    return '<div class="note-item ' + matchClass + '">' +
+        '370Gap169 Last: C' + getHeaderDisplayName(lastUpdatedCol) + ' R' + (anchorRow + 1) +
+        ' = ' + (tableData[anchorRow][lastUpdatedCol] || '') +
+        ' | Gap: ' + GAP_370_GAP169_BETWEEN +
+        ' | Red Source: C' + getHeaderDisplayName(sourcePos.col) + ' R' + (sourcePos.row + 1) +
+        ' = ' + sourceVal +
+        ' | Perms: [' + perms.join(',') + ']' +
+        ' | Found(' + foundInRed.length + '): ' + redList +
+        ' | Yellow(Position only): ' + yellowList +
+        '</div>';
+}
+
+function drawArrows370Gap169(pairs) {
+    const redSvg = document.getElementById('red370Gap169Svg');
+    const yellowSvg = document.getElementById('yellow370Gap169Svg');
+    if (!redSvg || !yellowSvg) return;
+
+    redSvg.innerHTML = '';
+    yellowSvg.innerHTML = '';
+    redSvg.style.width = '100%';
+    redSvg.style.height = '100%';
+    yellowSvg.style.width = '100%';
+    yellowSvg.style.height = '100%';
+
+    addArrowDefs(redSvg);
+    addArrowDefs(yellowSvg);
+
+    for (const pair of pairs) {
+        if (pair.table === 'red370Gap169') {
+            drawOneArrow('red370Gap169', redSvg, pair.fromRow, pair.fromCol, pair.toRow, pair.toCol);
+        } else if (pair.table === 'yellow370Gap169') {
+            drawOneArrow('yellow370Gap169', yellowSvg, pair.fromRow, pair.fromCol, pair.toRow, pair.toCol);
         }
     }
 }
