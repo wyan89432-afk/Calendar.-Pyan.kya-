@@ -3847,7 +3847,7 @@ function runCompare370Gap169() {
     );
 
     if (redStart < 0 || yellowStart < 0 || overallEnd < redStart || ROWS <= 0) {
-        return '<div class="note-item">370Gap169 data မရှိပါ။</div>';
+        return '<div class="note-item">370 Gap 169 data မရှိပါ။</div>';
     }
 
     // Follow the 460-style dynamic anchor. The sample values 037 and 073
@@ -3863,7 +3863,7 @@ function runCompare370Gap169() {
     }
 
     if (anchorRow < 0) {
-        return '<div class="note-item">370Gap169 Last Updated column မှ number မရှိပါ။</div>';
+        return '<div class="note-item">370 Gap 169 Last Updated column မှ number မရှိပါ။</div>';
     }
 
     // Step backward by 169 intervening cells (170 position indexes).
@@ -3872,12 +3872,12 @@ function runCompare370Gap169() {
     const sourcePos = fromLinear560(sourceLinear, redStart, lastUpdatedCol);
 
     if (!sourcePos || sourcePos.col < redStart) {
-        return '<div class="note-item">370Gap169 gap 169 အတွက် Red source position မရှိပါ။</div>';
+        return '<div class="note-item">370 Gap 169 gap 169 အတွက် Red source position မရှိပါ။</div>';
     }
 
     const sourceVal = tableData[sourcePos.row]?.[sourcePos.col] || '';
     if (!sourceVal.trim()) {
-        return '<div class="note-item">370Gap169 gap 169 source number မရှိပါ။</div>';
+        return '<div class="note-item">370 Gap 169 gap 169 source number မရှိပါ။</div>';
     }
 
     const sourceCell = document.getElementById(
@@ -3958,14 +3958,14 @@ function runCompare370Gap169() {
         .join(', ');
 
     if (foundInRed.length === 0) {
-        return '<div class="note-item">370Gap169: Gap 169 အရ Red table မှာ permutation match မတွေ့ပါ။</div>';
+        return '<div class="note-item">370 Gap 169: Gap 169 အရ Red table မှာ permutation match မတွေ့ပါ။</div>';
     }
 
     drawArrows370Gap169(arrowPairs);
 
     const matchClass = foundInRed.length >= 3 ? 'match-3plus' : '';
     return '<div class="note-item ' + matchClass + '">' +
-        '370Gap169 Last: C' + getHeaderDisplayName(lastUpdatedCol) + ' R' + (anchorRow + 1) +
+        '370 Gap 169 Last: C' + getHeaderDisplayName(lastUpdatedCol) + ' R' + (anchorRow + 1) +
         ' = ' + (tableData[anchorRow][lastUpdatedCol] || '') +
         ' | Gap: ' + GAP_370_GAP169_BETWEEN +
         ' | Red Source: C' + getHeaderDisplayName(sourcePos.col) + ' R' + (sourcePos.row + 1) +
